@@ -3,7 +3,7 @@
 import { useState } from "react";
 import {
   MessageSquare, Edit3, MoreHorizontal, Share2,
-  MapPin, Calendar, ChevronRight, Send, Loader,
+   Calendar, ChevronRight, Send, Loader,
 } from "lucide-react";
 import { PRIORITY_CONFIG, CATEGORY_COLORS, STATUS_CONFIG, AVATAR_COLORS } from "@/types/tokens";
 import { WorkOrder, WOStatus } from "@/types/types";
