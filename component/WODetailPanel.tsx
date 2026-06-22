@@ -35,7 +35,13 @@ export function WODetailPanel({ wo, onStatusChange, onChecklistToggle, updatingI
   const category = CATEGORY_COLORS[wo.category] ?? CATEGORY_COLORS["General"];
   const isUpdating = updatingId === wo.id;
 
-  const { data: messages = [], isLoading: msgLoading } = useGetMaintenanceMessagesQuery(wo.numericId);
+const { data: messages = [], isLoading: msgLoading } =
+  useGetMaintenanceMessagesQuery(
+    wo.numericId,
+    {
+      skip: !wo.numericId
+    }
+  );
   const [postComment, { isLoading: posting }] = usePostMaintenanceCommentMutation();
 
   const handleSendComment = async () => {

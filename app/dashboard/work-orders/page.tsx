@@ -153,10 +153,10 @@ export default function WorkOrdersPage() {
   >({});
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
-  const baseWorkOrders: WorkOrder[] = useMemo(
-    () => (data?.data.requests ?? []).map((r, i) => toWorkOrder(r, i)),
-    [data]
-  );
+ const baseWorkOrders: WorkOrder[] = useMemo(
+  () => (data?.data?.requests ?? []).map((r, i) => toWorkOrder(r, i)),
+  [data]
+);
 
   const workOrders: WorkOrder[] = useMemo(
     () =>
