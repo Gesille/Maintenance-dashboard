@@ -54,7 +54,6 @@ function stripHtml(html: string | null | undefined): string {
   );
 }
 
-// Maps frontend WOStatus → backend RepairState
 export function woStatusToRepairState(status: WOStatus): RepairState {
   switch (status) {
     case "in_progress": return "under_repair";
@@ -99,7 +98,6 @@ function toWorkOrder(r: MaintenanceRequest, index: number): WorkOrder {
     new Date(r.scheduleDate) < new Date()
   );
 
-  // location can be string OR { id, name } depending on API version
   const locationRaw = r.equipment?.location;
   const location =
     typeof locationRaw === "string"
@@ -148,15 +146,13 @@ export default function WorkOrdersPage() {
   const [updateStatus] = useUpdateMaintenanceStatusMutation();
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [statusOverrides, setStatusOverrides] = useState<
-    Record<string, WOStatus>
-  >({});
+  const [statusOverrides, setStatusOverrides] = useState<Record<string, WOStatus>>({});
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
- const baseWorkOrders: WorkOrder[] = useMemo(
-  () => (data?.data?.requests ?? []).map((r, i) => toWorkOrder(r, i)),
-  [data]
-);
+  const baseWorkOrders: WorkOrder[] = useMemo(
+    () => (data?.data?.requests ?? []).map((r, i) => toWorkOrder(r, i)),
+    [data]
+  );
 
   const workOrders: WorkOrder[] = useMemo(
     () =>
@@ -173,16 +169,13 @@ export default function WorkOrdersPage() {
 
   const handleStatusChange = useCallback(
     async (id: string, status: WOStatus) => {
-      // Optimistic update
       setStatusOverrides((prev) => ({ ...prev, [id]: status }));
       setUpdatingId(id);
-
       try {
         const numericId = parseInt(id.replace("#", ""));
         const repairState = woStatusToRepairState(status);
         await updateStatus({ id: numericId, state: repairState }).unwrap();
       } catch (err) {
-        // Rollback on failure
         setStatusOverrides((prev) => {
           const next = { ...prev };
           delete next[id];
@@ -196,15 +189,10 @@ export default function WorkOrdersPage() {
     [updateStatus]
   );
 
-  const handleChecklistToggle = useCallback(
-    (_id: string, _index: number) => {},
-    []
-  );
-  const handleNew = useCallback(
-    () => console.log("Open new work order form"),
-    []
-  );
+  const handleChecklistToggle = useCallback((_id: string, _index: number) => {}, []);
+  const handleNew = useCallback(() => console.log("Open new work order form"), []);
 
+  // ── Loading state ──
   if (isLoading) {
     return (
       <div
@@ -214,28 +202,56 @@ export default function WorkOrdersPage() {
           height: "100vh",
           alignItems: "center",
           justifyContent: "center",
-          background: "#F8FAFC",
-          gap: 12,
+          background: "linear-gradient(135deg, #F5F3FF 0%, #EEF2FF 50%, #F0F9FF 100%)",
+          gap: 16,
         }}
       >
         <div
           style={{
-            width: 28,
-            height: 28,
-            border: "2.5px solid #E2E8F0",
-            borderTop: "2.5px solid #6366F1",
-            borderRadius: "50%",
-            animation: "spin 0.7s linear infinite",
+            width: 48,
+            height: 48,
+            borderRadius: 14,
+            background: "linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 8px 24px rgba(99,102,241,0.35)",
+            animation: "breathe 1.5s ease-in-out infinite",
           }}
-        />
-        <span style={{ fontSize: 13, color: "#64748B" }}>
-          Loading work orders…
-        </span>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        >
+          <i
+            className="ti ti-settings"
+            style={{ fontSize: 22, color: "#fff" }}
+            aria-hidden="true"
+          />
+        </div>
+        <div style={{ textAlign: "center" }}>
+          <p
+            style={{
+              fontSize: 15,
+              fontWeight: 700,
+              color: "#3730A3",
+              margin: "0 0 4px",
+              letterSpacing: "-0.02em",
+            }}
+          >
+            MaintenancePro
+          </p>
+          <p style={{ fontSize: 12, color: "#A5B4FC", margin: 0 }}>
+            Loading work orders…
+          </p>
+        </div>
+        <style>{`
+          @keyframes breathe {
+            0%, 100% { transform: scale(1); box-shadow: 0 8px 24px rgba(99,102,241,0.35); }
+            50% { transform: scale(1.06); box-shadow: 0 12px 32px rgba(99,102,241,0.5); }
+          }
+        `}</style>
       </div>
     );
   }
 
+  // ── Error state ──
   if (isError) {
     return (
       <div
@@ -245,38 +261,75 @@ export default function WorkOrdersPage() {
           height: "100vh",
           alignItems: "center",
           justifyContent: "center",
-          background: "#F8FAFC",
-          gap: 12,
+          background: "#FFF5F5",
+          gap: 14,
         }}
       >
-        <p style={{ color: "#B91C1C", fontSize: 14, margin: 0 }}>
-          Failed to load work orders.
-        </p>
+        <div
+          style={{
+            width: 52,
+            height: 52,
+            borderRadius: "50%",
+            background: "#FEE2E2",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+        >
+          <i
+            className="ti ti-alert-triangle"
+            style={{ fontSize: 24, color: "#DC2626" }}
+            aria-hidden="true"
+          />
+        </div>
+        <div style={{ textAlign: "center" }}>
+          <p
+            style={{
+              fontSize: 15,
+              fontWeight: 700,
+              color: "#7F1D1D",
+              margin: "0 0 4px",
+              letterSpacing: "-0.02em",
+            }}
+          >
+            Something went wrong
+          </p>
+          <p style={{ fontSize: 12, color: "#EF4444", margin: 0 }}>
+            Failed to load work orders
+          </p>
+        </div>
         <button
           onClick={refetch}
           style={{
-            padding: "7px 14px",
-            background: "#6366F1",
+            padding: "9px 20px",
+            background: "linear-gradient(135deg, #6366F1, #8B5CF6)",
             color: "#fff",
             border: "none",
-            borderRadius: 7,
+            borderRadius: 10,
             fontSize: 13,
+            fontWeight: 600,
             cursor: "pointer",
+            boxShadow: "0 4px 12px rgba(99,102,241,0.35)",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
           }}
         >
-          Retry
+          <i className="ti ti-refresh" style={{ fontSize: 13 }} aria-hidden="true" />
+          Try again
         </button>
       </div>
     );
   }
 
+  // ── Main layout ──
   return (
     <div
       style={{
         display: "flex",
         height: "100vh",
         overflow: "hidden",
-        background: "#F8FAFC",
+        background: "#F8FAFF",
       }}
     >
       <WorkOrderSidebar />
