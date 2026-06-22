@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Search, Plus, SlidersHorizontal } from "lucide-react";
+import { Search, Plus, SlidersHorizontal, Zap } from "lucide-react";
 import { WorkOrder } from "@/types/types";
 import { AVATAR_COLORS, PRIORITY_CONFIG, STATUS_CONFIG } from "@/types/tokens";
 
@@ -14,12 +14,12 @@ interface WOListProps {
   onNew: () => void;
 }
 
-const CATEGORY_DOT: Record<string, string> = {
-  Plumbing: "#3B82F6",
-  Electrical: "#F97316",
-  "HVAC / Refrigeration": "#14B8A6",
-  Sanitation: "#A855F7",
-  General: "#6B7280",
+const CATEGORY_META: Record<string, { dot: string; bg: string; text: string }> = {
+  Plumbing:             { dot: "#3B82F6", bg: "#EFF6FF", text: "#1D4ED8" },
+  Electrical:           { dot: "#F97316", bg: "#FFF7ED", text: "#C2410C" },
+  "HVAC / Refrigeration": { dot: "#14B8A6", bg: "#F0FDFA", text: "#0F766E" },
+  Sanitation:           { dot: "#A855F7", bg: "#FAF5FF", text: "#7E22CE" },
+  General:              { dot: "#6B7280", bg: "#F9FAFB", text: "#374151" },
 };
 
 export function WOListPanel({ workOrders, selectedId, onSelect, onNew }: WOListProps) {
@@ -43,30 +43,92 @@ export function WOListPanel({ workOrders, selectedId, onSelect, onNew }: WOListP
   ];
 
   const openCount = workOrders.filter((w) => w.status !== "done").length;
+  const overdueCount = workOrders.filter((w) => w.overdue).length;
 
   return (
     <div
       style={{
-        width: 304,
+        width: 312,
         flexShrink: 0,
-        borderRight: "1px solid #E2E8F0",
+        borderRight: "1px solid #E8EAFF",
         display: "flex",
         flexDirection: "column",
-        background: "#F8FAFC",
+        background: "#F8FAFF",
         height: "100%",
         overflow: "hidden",
       }}
     >
       {/* Header */}
-      <div style={{ padding: "18px 16px 0", background: "#fff", borderBottom: "1px solid #E2E8F0" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+      <div
+        style={{
+          padding: "20px 16px 0",
+          background: "#fff",
+          borderBottom: "1px solid #E8EAFF",
+          boxShadow: "0 1px 0 #E8EAFF",
+        }}
+      >
+        <div
+          style={{
+            display: "flex",
+            alignItems: "flex-start",
+            justifyContent: "space-between",
+            marginBottom: 14,
+          }}
+        >
           <div>
-            <h1 style={{ fontSize: 15, fontWeight: 600, color: "#0F172A", margin: 0, letterSpacing: "-0.01em" }}>
+            <h1
+              style={{
+                fontSize: 16,
+                fontWeight: 700,
+                color: "#0F172A",
+                margin: 0,
+                letterSpacing: "-0.025em",
+              }}
+            >
               Work Orders
             </h1>
-            <p style={{ fontSize: 11, color: "#94A3B8", margin: "2px 0 0" }}>
-              {openCount} active
-            </p>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: 4 }}>
+              <span
+                style={{
+                  fontSize: 11,
+                  color: "#64748B",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                }}
+              >
+                <span
+                  style={{
+                    display: "inline-block",
+                    width: 6,
+                    height: 6,
+                    borderRadius: "50%",
+                    background: "#22C55E",
+                    boxShadow: "0 0 0 3px rgba(34,197,94,0.2)",
+                  }}
+                />
+                {openCount} active
+              </span>
+              {overdueCount > 0 && (
+                <span
+                  style={{
+                    fontSize: 10,
+                    fontWeight: 600,
+                    background: "#FEF2F2",
+                    color: "#DC2626",
+                    border: "1px solid #FECACA",
+                    padding: "1px 7px",
+                    borderRadius: 99,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 3,
+                  }}
+                >
+                  <Zap size={9} strokeWidth={2.5} />
+                  {overdueCount} overdue
+                </span>
+              )}
+            </div>
           </div>
           <button
             onClick={onNew}
@@ -74,18 +136,30 @@ export function WOListPanel({ workOrders, selectedId, onSelect, onNew }: WOListP
               display: "flex",
               alignItems: "center",
               gap: 5,
-              padding: "6px 12px",
-              background: "#6366F1",
+              padding: "8px 14px",
+              background: "linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)",
               color: "#fff",
               border: "none",
-              borderRadius: 8,
+              borderRadius: 10,
               fontSize: 12,
-              fontWeight: 500,
+              fontWeight: 600,
               cursor: "pointer",
               letterSpacing: "-0.01em",
+              boxShadow: "0 4px 12px rgba(99,102,241,0.35)",
+              transition: "all 0.15s ease",
+            }}
+            onMouseEnter={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.boxShadow =
+                "0 6px 18px rgba(99,102,241,0.5)";
+              (e.currentTarget as HTMLButtonElement).style.transform = "translateY(-1px)";
+            }}
+            onMouseLeave={(e) => {
+              (e.currentTarget as HTMLButtonElement).style.boxShadow =
+                "0 4px 12px rgba(99,102,241,0.35)";
+              (e.currentTarget as HTMLButtonElement).style.transform = "translateY(0)";
             }}
           >
-            <Plus size={12} strokeWidth={2.5} /> New
+            <Plus size={13} strokeWidth={2.5} /> New
           </button>
         </div>
 
@@ -95,20 +169,27 @@ export function WOListPanel({ workOrders, selectedId, onSelect, onNew }: WOListP
             display: "flex",
             alignItems: "center",
             gap: 8,
-            background: "#F1F5F9",
-            borderRadius: 8,
-            padding: "0 10px",
-            height: 34,
+            background: "#F8FAFF",
+            borderRadius: 10,
+            padding: "0 12px",
+            height: 36,
             marginBottom: 12,
-            border: "1px solid #E2E8F0",
+            border: "1.5px solid #E0E7FF",
+            transition: "border-color 0.15s",
           }}
+          onFocusCapture={(e) =>
+            ((e.currentTarget as HTMLDivElement).style.borderColor = "#6366F1")
+          }
+          onBlurCapture={(e) =>
+            ((e.currentTarget as HTMLDivElement).style.borderColor = "#E0E7FF")
+          }
         >
-          <Search size={13} color="#94A3B8" />
+          <Search size={13} color="#A5B4FC" strokeWidth={2} />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by title or ID…"
+            placeholder="Search orders…"
             style={{
               border: "none",
               background: "transparent",
@@ -127,17 +208,17 @@ export function WOListPanel({ workOrders, selectedId, onSelect, onNew }: WOListP
               key={t.key}
               onClick={() => setTab(t.key)}
               style={{
-                padding: "8px 14px",
+                padding: "9px 16px",
                 fontSize: 12,
-                fontWeight: tab === t.key ? 600 : 400,
+                fontWeight: tab === t.key ? 700 : 400,
                 color: tab === t.key ? "#6366F1" : "#94A3B8",
                 background: "none",
                 border: "none",
-                borderBottom: `2px solid ${tab === t.key ? "#6366F1" : "transparent"}`,
+                borderBottom: `2.5px solid ${tab === t.key ? "#6366F1" : "transparent"}`,
                 cursor: "pointer",
                 marginBottom: -1,
                 letterSpacing: "-0.01em",
-                transition: "color 0.12s",
+                transition: "all 0.15s",
               }}
             >
               {t.label}
@@ -158,7 +239,7 @@ export function WOListPanel({ workOrders, selectedId, onSelect, onNew }: WOListP
         }}
       >
         <span>
-          <strong style={{ color: "#475569", fontWeight: 600 }}>{filtered.length}</strong> orders
+          <strong style={{ color: "#475569", fontWeight: 700 }}>{filtered.length}</strong> orders
         </span>
         <button
           style={{
@@ -170,6 +251,8 @@ export function WOListPanel({ workOrders, selectedId, onSelect, onNew }: WOListP
             fontSize: 11,
             color: "#64748B",
             cursor: "pointer",
+            padding: "4px 8px",
+            borderRadius: 6,
           }}
         >
           <SlidersHorizontal size={11} /> Sort
@@ -177,16 +260,27 @@ export function WOListPanel({ workOrders, selectedId, onSelect, onNew }: WOListP
       </div>
 
       {/* List */}
-      <div style={{ flex: 1, overflowY: "auto", padding: "0 10px 12px" }}>
+      <div style={{ flex: 1, overflowY: "auto", padding: "0 10px 16px" }}>
         {filtered.length === 0 && (
-          <div style={{ textAlign: "center", padding: "48px 20px", color: "#94A3B8", fontSize: 13 }}>
+          <div
+            style={{
+              textAlign: "center",
+              padding: "56px 20px",
+              color: "#94A3B8",
+              fontSize: 13,
+            }}
+          >
+            <i
+              className="ti ti-clipboard-off"
+              style={{ fontSize: 36, color: "#E0E7FF", display: "block", marginBottom: 10 }}
+            />
             No work orders found
           </div>
         )}
         {filtered.map((wo) => {
           const status = STATUS_CONFIG[wo.status];
           const priority = PRIORITY_CONFIG[wo.priority];
-          const catDot = CATEGORY_DOT[wo.category] ?? "#6B7280";
+          const catMeta = CATEGORY_META[wo.category] ?? CATEGORY_META["General"];
           const isSelected = wo.id === selectedId;
 
           return (
@@ -194,70 +288,150 @@ export function WOListPanel({ workOrders, selectedId, onSelect, onNew }: WOListP
               key={wo.id}
               onClick={() => onSelect(wo)}
               style={{
-                padding: "12px 14px",
-                borderRadius: 10,
-                border: `1.5px solid ${isSelected ? "#6366F1" : "#E2E8F0"}`,
-                background: isSelected ? "#F5F3FF" : "#fff",
-                marginBottom: 5,
+                padding: "13px 14px",
+                borderRadius: 12,
+                border: `1.5px solid ${isSelected ? "#6366F1" : "#EEF0FF"}`,
+                background: isSelected
+                  ? "linear-gradient(145deg, #F5F3FF 0%, #EEF2FF 100%)"
+                  : "#fff",
+                marginBottom: 6,
                 cursor: "pointer",
-                transition: "all 0.12s",
-                boxShadow: isSelected ? "0 0 0 3px rgba(99,102,241,0.1)" : "none",
+                transition: "all 0.15s ease",
+                boxShadow: isSelected
+                  ? "0 0 0 3px rgba(99,102,241,0.12), 0 2px 8px rgba(99,102,241,0.1)"
+                  : "0 1px 3px rgba(15,23,42,0.04)",
+              }}
+              onMouseEnter={(e) => {
+                if (!isSelected) {
+                  (e.currentTarget as HTMLDivElement).style.boxShadow =
+                    "0 4px 12px rgba(99,102,241,0.1)";
+                  (e.currentTarget as HTMLDivElement).style.borderColor = "#C7D2FE";
+                  (e.currentTarget as HTMLDivElement).style.transform = "translateY(-1px)";
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (!isSelected) {
+                  (e.currentTarget as HTMLDivElement).style.boxShadow =
+                    "0 1px 3px rgba(15,23,42,0.04)";
+                  (e.currentTarget as HTMLDivElement).style.borderColor = "#EEF0FF";
+                  (e.currentTarget as HTMLDivElement).style.transform = "translateY(0)";
+                }
               }}
             >
-              {/* Top row: title + id */}
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 6 }}>
-                <p
+              {/* Top: category pill + id */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  marginBottom: 7,
+                }}
+              >
+                <span
                   style={{
-                    fontSize: 13,
-                    fontWeight: 500,
-                    color: isSelected ? "#3730A3" : "#0F172A",
-                    margin: 0,
-                    lineHeight: 1.4,
-                    flex: 1,
-                    paddingRight: 8,
-                    letterSpacing: "-0.01em",
+                    fontSize: 9,
+                    fontWeight: 700,
+                    background: catMeta.bg,
+                    color: catMeta.text,
+                    padding: "2px 8px",
+                    borderRadius: 99,
+                    letterSpacing: "0.06em",
+                    textTransform: "uppercase",
                   }}
                 >
-                  {wo.title}
-                </p>
-                <span style={{ fontSize: 10, color: isSelected ? "#818CF8" : "#94A3B8", flexShrink: 0, fontFamily: "monospace" }}>
+                  {wo.category}
+                </span>
+                <span
+                  style={{
+                    fontSize: 10,
+                    color: isSelected ? "#818CF8" : "#CBD5E1",
+                    fontFamily: "monospace",
+                    fontWeight: 600,
+                  }}
+                >
                   {wo.id}
                 </span>
               </div>
 
-              {/* Meta row */}
-              <p style={{ fontSize: 11, color: isSelected ? "#6366F1" : "#94A3B8", margin: "0 0 10px", display: "flex", alignItems: "center", gap: 5 }}>
-                <span
-                  style={{
-                    width: 6, height: 6, borderRadius: "50%",
-                    background: catDot, display: "inline-block", flexShrink: 0,
-                  }}
-                />
-                {wo.category} · {wo.requestedBy}
+              {/* Title */}
+              <p
+                style={{
+                  fontSize: 13,
+                  fontWeight: 600,
+                  color: isSelected ? "#3730A3" : "#0F172A",
+                  margin: "0 0 5px",
+                  lineHeight: 1.4,
+                  letterSpacing: "-0.015em",
+                }}
+              >
+                {wo.title}
               </p>
 
-              {/* Badges row */}
-              <div style={{ display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center" }}>
+              {/* Requester */}
+              <p
+                style={{
+                  fontSize: 11,
+                  color: "#94A3B8",
+                  margin: "0 0 10px",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 4,
+                }}
+              >
+                <i className="ti ti-user" style={{ fontSize: 11 }} aria-hidden="true" />
+                {wo.requestedBy} · {wo.dueDate}
+              </p>
+
+              {/* Badges + avatars */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: 5,
+                  flexWrap: "wrap",
+                  alignItems: "center",
+                }}
+              >
+                {/* Status pill with animated dot */}
                 <span
                   style={{
-                    display: "inline-flex", alignItems: "center", gap: 4,
-                    fontSize: 10, fontWeight: 500,
-                    background: status.bg, color: status.text,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                    fontSize: 10,
+                    fontWeight: 600,
+                    background: status.bg,
+                    color: status.text,
                     border: `1px solid ${status.border}`,
-                    padding: "2px 7px", borderRadius: 99,
+                    padding: "3px 8px",
+                    borderRadius: 99,
                   }}
                 >
-                  <span style={{ width: 5, height: 5, borderRadius: "50%", background: status.dot, display: "inline-block", flexShrink: 0 }} />
+                  <span
+                    style={{
+                      width: 5,
+                      height: 5,
+                      borderRadius: "50%",
+                      background: status.dot,
+                      display: "inline-block",
+                      flexShrink: 0,
+                      ...(wo.status === "in_progress"
+                        ? { animation: "pulse 2s ease-in-out infinite" }
+                        : {}),
+                    }}
+                  />
                   {status.label}
                 </span>
 
                 {wo.overdue && (
                   <span
                     style={{
-                      fontSize: 10, fontWeight: 500,
-                      background: "#FEF2F2", color: "#B91C1C",
+                      fontSize: 10,
+                      fontWeight: 600,
+                      background: "#FEF2F2",
+                      color: "#DC2626",
                       border: "1px solid #FECACA",
-                      padding: "2px 7px", borderRadius: 99,
+                      padding: "3px 8px",
+                      borderRadius: 99,
                     }}
                   >
                     Overdue
@@ -266,10 +440,13 @@ export function WOListPanel({ workOrders, selectedId, onSelect, onNew }: WOListP
 
                 <span
                   style={{
-                    fontSize: 10, fontWeight: 500,
-                    background: priority.bg, color: priority.text,
+                    fontSize: 10,
+                    fontWeight: 600,
+                    background: priority.bg,
+                    color: priority.text,
                     border: `1px solid ${priority.border}`,
-                    padding: "2px 7px", borderRadius: 99,
+                    padding: "3px 8px",
+                    borderRadius: 99,
                   }}
                 >
                   {priority.label}
@@ -284,13 +461,20 @@ export function WOListPanel({ workOrders, selectedId, onSelect, onNew }: WOListP
                         key={i}
                         title={a.name}
                         style={{
-                          width: 20, height: 20, borderRadius: "50%",
-                          background: av.bg, color: av.text,
-                          fontSize: 8, fontWeight: 700,
-                          display: "flex", alignItems: "center", justifyContent: "center",
-                          marginLeft: i > 0 ? -5 : 0,
-                          border: "1.5px solid #fff",
+                          width: 22,
+                          height: 22,
+                          borderRadius: "50%",
+                          background: av.bg,
+                          color: av.text,
+                          fontSize: 8,
+                          fontWeight: 700,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          marginLeft: i > 0 ? -6 : 0,
+                          border: "2px solid #fff",
                           flexShrink: 0,
+                          boxShadow: "0 1px 3px rgba(0,0,0,0.1)",
                         }}
                       >
                         {a.initials}
@@ -303,6 +487,13 @@ export function WOListPanel({ workOrders, selectedId, onSelect, onNew }: WOListP
           );
         })}
       </div>
+
+      <style>{`
+        @keyframes pulse {
+          0%, 100% { opacity: 1; box-shadow: 0 0 0 0 currentColor; }
+          50% { opacity: 0.7; box-shadow: 0 0 0 3px transparent; }
+        }
+      `}</style>
     </div>
   );
 }
