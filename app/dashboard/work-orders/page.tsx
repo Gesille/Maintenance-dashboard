@@ -79,9 +79,9 @@ function toWorkOrder(r: MaintenanceRequest, index: number): WorkOrder {
     dueDate:     formatDate(r.scheduleDate),
     overdue,
     completedOn: status === "done" ? formatDate(r.closeDate) : undefined,
-    description: stripHtml(r.description), // ✅ clean text
+    description: stripHtml(r.description),
     asset:       r.equipment?.name ?? "—",
-    location:    r.equipment?.location?.name ?? "—",
+    location: (typeof r.equipment?.location === "string" ? r.equipment.location : r.equipment?.location?.name) ?? "—",
     category:    normCategory(r.category?.name),
     assignees:   r.technicians.map((t, i) => ({
       initials: initials(t.name),

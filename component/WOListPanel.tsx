@@ -49,7 +49,7 @@ export function WOListPanel({ workOrders, selectedId, onSelect, onNew }: WOListP
       style={{
         width: 304,
         flexShrink: 0,
-        borderRight: "1px solid #E5E7EB",
+        borderRight: "1px solid #E2E8F0",
         display: "flex",
         flexDirection: "column",
         background: "#F8FAFC",
@@ -58,7 +58,7 @@ export function WOListPanel({ workOrders, selectedId, onSelect, onNew }: WOListP
       }}
     >
       {/* Header */}
-      <div style={{ padding: "18px 16px 0", background: "#fff", borderBottom: "1px solid #E5E7EB" }}>
+      <div style={{ padding: "18px 16px 0", background: "#fff", borderBottom: "1px solid #E2E8F0" }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
           <div>
             <h1 style={{ fontSize: 15, fontWeight: 600, color: "#0F172A", margin: 0, letterSpacing: "-0.01em" }}>
@@ -75,7 +75,7 @@ export function WOListPanel({ workOrders, selectedId, onSelect, onNew }: WOListP
               alignItems: "center",
               gap: 5,
               padding: "6px 12px",
-              background: "#0F172A",
+              background: "#6366F1",
               color: "#fff",
               border: "none",
               borderRadius: 8,
@@ -100,8 +100,7 @@ export function WOListPanel({ workOrders, selectedId, onSelect, onNew }: WOListP
             padding: "0 10px",
             height: 34,
             marginBottom: 12,
-            border: "1px solid transparent",
-            transition: "border-color 0.15s",
+            border: "1px solid #E2E8F0",
           }}
         >
           <Search size={13} color="#94A3B8" />
@@ -131,10 +130,10 @@ export function WOListPanel({ workOrders, selectedId, onSelect, onNew }: WOListP
                 padding: "8px 14px",
                 fontSize: 12,
                 fontWeight: tab === t.key ? 600 : 400,
-                color: tab === t.key ? "#0F172A" : "#94A3B8",
+                color: tab === t.key ? "#6366F1" : "#94A3B8",
                 background: "none",
                 border: "none",
-                borderBottom: `2px solid ${tab === t.key ? "#0F172A" : "transparent"}`,
+                borderBottom: `2px solid ${tab === t.key ? "#6366F1" : "transparent"}`,
                 cursor: "pointer",
                 marginBottom: -1,
                 letterSpacing: "-0.01em",
@@ -197,12 +196,12 @@ export function WOListPanel({ workOrders, selectedId, onSelect, onNew }: WOListP
               style={{
                 padding: "12px 14px",
                 borderRadius: 10,
-                border: `1px solid ${isSelected ? "#0F172A" : "#E2E8F0"}`,
-                background: isSelected ? "#0F172A" : "#fff",
+                border: `1.5px solid ${isSelected ? "#6366F1" : "#E2E8F0"}`,
+                background: isSelected ? "#F5F3FF" : "#fff",
                 marginBottom: 5,
                 cursor: "pointer",
                 transition: "all 0.12s",
-                boxShadow: isSelected ? "0 2px 8px rgba(15,23,42,0.12)" : "none",
+                boxShadow: isSelected ? "0 0 0 3px rgba(99,102,241,0.1)" : "none",
               }}
             >
               {/* Top row: title + id */}
@@ -211,7 +210,7 @@ export function WOListPanel({ workOrders, selectedId, onSelect, onNew }: WOListP
                   style={{
                     fontSize: 13,
                     fontWeight: 500,
-                    color: isSelected ? "#F8FAFC" : "#0F172A",
+                    color: isSelected ? "#3730A3" : "#0F172A",
                     margin: 0,
                     lineHeight: 1.4,
                     flex: 1,
@@ -221,21 +220,17 @@ export function WOListPanel({ workOrders, selectedId, onSelect, onNew }: WOListP
                 >
                   {wo.title}
                 </p>
-                <span style={{ fontSize: 10, color: isSelected ? "rgba(248,250,252,0.45)" : "#94A3B8", flexShrink: 0, fontFamily: "monospace" }}>
+                <span style={{ fontSize: 10, color: isSelected ? "#818CF8" : "#94A3B8", flexShrink: 0, fontFamily: "monospace" }}>
                   {wo.id}
                 </span>
               </div>
 
               {/* Meta row */}
-              <p style={{ fontSize: 11, color: isSelected ? "rgba(248,250,252,0.5)" : "#94A3B8", margin: "0 0 10px", display: "flex", alignItems: "center", gap: 5 }}>
+              <p style={{ fontSize: 11, color: isSelected ? "#6366F1" : "#94A3B8", margin: "0 0 10px", display: "flex", alignItems: "center", gap: 5 }}>
                 <span
                   style={{
-                    width: 6,
-                    height: 6,
-                    borderRadius: "50%",
-                    background: catDot,
-                    display: "inline-block",
-                    flexShrink: 0,
+                    width: 6, height: 6, borderRadius: "50%",
+                    background: catDot, display: "inline-block", flexShrink: 0,
                   }}
                 />
                 {wo.category} · {wo.requestedBy}
@@ -245,41 +240,24 @@ export function WOListPanel({ workOrders, selectedId, onSelect, onNew }: WOListP
               <div style={{ display: "flex", gap: 5, flexWrap: "wrap", alignItems: "center" }}>
                 <span
                   style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 4,
-                    fontSize: 10,
-                    fontWeight: 500,
-                    background: isSelected ? "rgba(255,255,255,0.12)" : status.bg,
-                    color: isSelected ? "rgba(255,255,255,0.75)" : status.text,
-                    border: `1px solid ${isSelected ? "rgba(255,255,255,0.15)" : status.border}`,
-                    padding: "2px 7px",
-                    borderRadius: 99,
+                    display: "inline-flex", alignItems: "center", gap: 4,
+                    fontSize: 10, fontWeight: 500,
+                    background: status.bg, color: status.text,
+                    border: `1px solid ${status.border}`,
+                    padding: "2px 7px", borderRadius: 99,
                   }}
                 >
-                  <span
-                    style={{
-                      width: 5,
-                      height: 5,
-                      borderRadius: "50%",
-                      background: isSelected ? "rgba(255,255,255,0.6)" : status.dot,
-                      display: "inline-block",
-                      flexShrink: 0,
-                    }}
-                  />
+                  <span style={{ width: 5, height: 5, borderRadius: "50%", background: status.dot, display: "inline-block", flexShrink: 0 }} />
                   {status.label}
                 </span>
 
                 {wo.overdue && (
                   <span
                     style={{
-                      fontSize: 10,
-                      fontWeight: 500,
-                      background: isSelected ? "rgba(239,68,68,0.2)" : "#FEF2F2",
-                      color: isSelected ? "#FCA5A5" : "#B91C1C",
-                      border: `1px solid ${isSelected ? "rgba(239,68,68,0.3)" : "#FECACA"}`,
-                      padding: "2px 7px",
-                      borderRadius: 99,
+                      fontSize: 10, fontWeight: 500,
+                      background: "#FEF2F2", color: "#B91C1C",
+                      border: "1px solid #FECACA",
+                      padding: "2px 7px", borderRadius: 99,
                     }}
                   >
                     Overdue
@@ -288,13 +266,10 @@ export function WOListPanel({ workOrders, selectedId, onSelect, onNew }: WOListP
 
                 <span
                   style={{
-                    fontSize: 10,
-                    fontWeight: 500,
-                    background: isSelected ? "rgba(255,255,255,0.1)" : priority.bg,
-                    color: isSelected ? "rgba(255,255,255,0.6)" : priority.text,
-                    border: `1px solid ${isSelected ? "rgba(255,255,255,0.12)" : priority.border}`,
-                    padding: "2px 7px",
-                    borderRadius: 99,
+                    fontSize: 10, fontWeight: 500,
+                    background: priority.bg, color: priority.text,
+                    border: `1px solid ${priority.border}`,
+                    padding: "2px 7px", borderRadius: 99,
                   }}
                 >
                   {priority.label}
@@ -309,18 +284,12 @@ export function WOListPanel({ workOrders, selectedId, onSelect, onNew }: WOListP
                         key={i}
                         title={a.name}
                         style={{
-                          width: 20,
-                          height: 20,
-                          borderRadius: "50%",
-                          background: isSelected ? "rgba(255,255,255,0.15)" : av.bg,
-                          color: isSelected ? "rgba(255,255,255,0.8)" : av.text,
-                          fontSize: 8,
-                          fontWeight: 700,
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "center",
+                          width: 20, height: 20, borderRadius: "50%",
+                          background: av.bg, color: av.text,
+                          fontSize: 8, fontWeight: 700,
+                          display: "flex", alignItems: "center", justifyContent: "center",
                           marginLeft: i > 0 ? -5 : 0,
-                          border: `1.5px solid ${isSelected ? "rgba(255,255,255,0.2)" : "#fff"}`,
+                          border: "1.5px solid #fff",
                           flexShrink: 0,
                         }}
                       >
