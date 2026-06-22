@@ -1,7 +1,7 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { apiSlice } from "../api/apiSlice";
 
-// ── Frontend-side type definitions ────────────────────────────────────────────
-// (mirrors the shape returned by your backend maintenance.service.ts)
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 export type RepairState = "new" | "under_repair" | "done" | "cancel";
 
@@ -16,14 +16,14 @@ export interface MaintenanceRequest {
   id: number;
   name: string;
   description: string | null;
-  priority: string;           // "Normal" | "High" | "Very Urgent"
+  priority: string;
   state: RepairState;
   maintenanceType: string;
   stage: StageInfo;
   equipment: {
     id: number;
     name: string;
-    location: { id: number; name: string } | null;
+    location: { id: number; name: string } | string | null;
     assetCode: string | null;
     serialNo: string | null;
     model: string | null;
@@ -55,12 +55,16 @@ export interface MaintenanceMessage {
 
 interface ListResponse {
   success: boolean;
-  data:{
- requests: MaintenanceRequest[];
-  stages: StageInfo[];
-  total: number;
-  }
- 
+  data: {
+    requests: MaintenanceRequest[];
+    stages: StageInfo[];
+    total: number;
+  };
+}
+
+interface SingleResponse {
+  success: boolean;
+  data: MaintenanceRequest;
 }
 
 interface MessagesResponse {
@@ -79,6 +83,11 @@ interface CommentResponse {
   };
 }
 
+interface StatusUpdateResponse {
+  success: boolean;
+  data: MaintenanceRequest | null;
+}
+
 // ── Slice ─────────────────────────────────────────────────────────────────────
 
 export const maintenanceApi = apiSlice.injectEndpoints({
@@ -93,6 +102,30 @@ export const maintenanceApi = apiSlice.injectEndpoints({
       providesTags: ["MaintenanceRequests"],
     }),
 
+    getMaintenanceRequestDetail: builder.query<MaintenanceRequest, number>({
+      query: (id) => ({
+        url: `get-request-detail/${id}`,
+        method: "GET",
+        credentials: "include" as const,
+      }),
+      transformResponse: (res: SingleResponse) => res.data,
+      providesTags: (_result, _err, id) => [{ type: "MaintenanceRequests", id }],
+    }),
+
+    updateMaintenanceStatus: builder.mutation<
+      StatusUpdateResponse,
+      { id: number; state: RepairState }
+    >({
+      query: ({ id, state }) => ({
+        url: `update-request-status/${id}`,
+        method: "PATCH",
+        body: { state },
+        credentials: "include" as const,
+      }),
+      // Invalidate so the list refetches after a status change
+      invalidatesTags: ["MaintenanceRequests"],
+    }),
+
     getMaintenanceMessages: builder.query<MaintenanceMessage[], number>({
       query: (id) => ({
         url: `get-request-messages/${id}`,
@@ -100,6 +133,7 @@ export const maintenanceApi = apiSlice.injectEndpoints({
         credentials: "include" as const,
       }),
       transformResponse: (res: MessagesResponse) => res.data,
+      providesTags: (_result, _err, id) => [{ type: "MaintenanceMessages" as any, id }],
     }),
 
     postMaintenanceComment: builder.mutation<
@@ -112,6 +146,9 @@ export const maintenanceApi = apiSlice.injectEndpoints({
         body,
         credentials: "include" as const,
       }),
+      invalidatesTags: (_result, _err, { id }) => [
+        { type: "MaintenanceMessages" as any, id },
+      ],
     }),
   }),
 
@@ -120,6 +157,8 @@ export const maintenanceApi = apiSlice.injectEndpoints({
 
 export const {
   useGetAllMaintenanceRequestsQuery,
+  useGetMaintenanceRequestDetailQuery,
+  useUpdateMaintenanceStatusMutation,
   useGetMaintenanceMessagesQuery,
   usePostMaintenanceCommentMutation,
 } = maintenanceApi;
