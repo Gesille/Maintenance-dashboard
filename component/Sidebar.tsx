@@ -31,16 +31,16 @@ export function WorkOrderSidebar({ user }: SidebarProps) {
           display: "flex",
           alignItems: "center",
           gap: 10,
-          padding: "8px 16px",
+          padding: "8px 12px",
           fontSize: 13,
-          color: active ? "#fff" : "rgba(255,255,255,0.5)",
+          color: active ? "#0F172A" : "#64748B",
           textDecoration: "none",
-          position: "relative",
-          fontWeight: active ? 500 : 400,
-          background: active ? "rgba(255,255,255,0.1)" : "transparent",
+          fontWeight: active ? 600 : 400,
+          background: active ? "#fff" : "transparent",
           borderRadius: 8,
           margin: "1px 8px",
           transition: "all 0.12s",
+          boxShadow: active ? "0 1px 3px rgba(15,23,42,0.08)" : "none",
         }}
       >
         <i className={`ti ${icon}`} style={{ fontSize: 16, flexShrink: 0 }} aria-hidden="true" />
@@ -77,7 +77,8 @@ export function WorkOrderSidebar({ user }: SidebarProps) {
     <aside
       style={{
         width: 220,
-        background: "#0F172A",
+        background: "#F1F4F8",
+        borderRight: "1px solid #E2E8F0",
         display: "flex",
         flexDirection: "column",
         flexShrink: 0,
@@ -90,7 +91,7 @@ export function WorkOrderSidebar({ user }: SidebarProps) {
       <div
         style={{
           padding: "20px 16px 16px",
-          borderBottom: "1px solid rgba(255,255,255,0.07)",
+          borderBottom: "1px solid #E2E8F0",
           display: "flex",
           alignItems: "center",
           gap: 10,
@@ -111,10 +112,10 @@ export function WorkOrderSidebar({ user }: SidebarProps) {
           <Settings size={15} color="#fff" />
         </div>
         <div>
-          <p style={{ fontSize: 13, fontWeight: 700, color: "#F8FAFC", margin: 0, letterSpacing: "-0.02em" }}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: "#0F172A", margin: 0, letterSpacing: "-0.02em" }}>
             MaintenancePro
           </p>
-          <p style={{ fontSize: 10, color: "rgba(255,255,255,0.35)", margin: 0, letterSpacing: "0.08em", textTransform: "uppercase" }}>
+          <p style={{ fontSize: 10, color: "#94A3B8", margin: 0, letterSpacing: "0.08em", textTransform: "uppercase" }}>
             Enterprise
           </p>
         </div>
@@ -128,12 +129,12 @@ export function WorkOrderSidebar({ user }: SidebarProps) {
 
         <p
           style={{
-            padding: "18px 24px 6px",
+            padding: "18px 20px 6px",
             fontSize: 10,
             fontWeight: 600,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "rgba(255,255,255,0.25)",
+            color: "#94A3B8",
             margin: 0,
           }}
         >
@@ -145,12 +146,12 @@ export function WorkOrderSidebar({ user }: SidebarProps) {
 
         <p
           style={{
-            padding: "18px 24px 6px",
+            padding: "18px 20px 6px",
             fontSize: 10,
             fontWeight: 600,
             letterSpacing: "0.1em",
             textTransform: "uppercase",
-            color: "rgba(255,255,255,0.25)",
+            color: "#94A3B8",
             margin: 0,
           }}
         >
@@ -165,7 +166,7 @@ export function WorkOrderSidebar({ user }: SidebarProps) {
       <div
         style={{
           padding: "12px 16px",
-          borderTop: "1px solid rgba(255,255,255,0.07)",
+          borderTop: "1px solid #E2E8F0",
           display: "flex",
           alignItems: "center",
           gap: 10,
@@ -190,14 +191,14 @@ export function WorkOrderSidebar({ user }: SidebarProps) {
           {initials}
         </div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p style={{ fontSize: 12, fontWeight: 500, color: "#F8FAFC", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+          <p style={{ fontSize: 12, fontWeight: 500, color: "#0F172A", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
             {displayName}
           </p>
-          <p style={{ fontSize: 10, color: "rgba(255,255,255,0.4)", margin: 0 }}>
+          <p style={{ fontSize: 10, color: "#94A3B8", margin: 0 }}>
             {displayRole}
           </p>
         </div>
-        <i className="ti ti-selector" style={{ fontSize: 14, color: "rgba(255,255,255,0.25)" }} aria-hidden="true" />
+        <i className="ti ti-selector" style={{ fontSize: 14, color: "#CBD5E1" }} aria-hidden="true" />
       </div>
     </aside>
   );
