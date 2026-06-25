@@ -153,7 +153,7 @@ export function WorkOrderSidebar() {
 
       {/* User footer → links to profile */}
       <Link
-        href="/profile"
+        href="/app/profile"
         style={{
           padding: "14px 16px",
           display: "flex",
