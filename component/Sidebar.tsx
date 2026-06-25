@@ -1,17 +1,25 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSelector } from "react-redux";
 import { Settings } from "lucide-react";
 import { NAV_ASSET_ITEMS, NAV_CONFIG_ITEMS, NAV_ITEMS } from "@/types/tokens";
-import { useDispatch } from "react-redux";
 
-interface SidebarProps {
-  user?: { name: string; role: string };
-}
-
-export function WorkOrderSidebar({ user }: SidebarProps) {
+export function WorkOrderSidebar() {
   const pathname = usePathname();
+  const user = useSelector((state: any) => state.auth.user);
+
+  const displayName: string = user?.name ?? "";
+  const displayRole: string = user?.role ?? "";
+  const avatarUrl: string | undefined = user?.avatar?.url;
+
+  const initials = displayName
+    .split(" ")
+    .slice(0, 2)
+    .map((w: string) => w[0]?.toUpperCase() ?? "")
+    .join("");
 
   const NavItem = ({
     label,
@@ -49,11 +57,7 @@ export function WorkOrderSidebar({ user }: SidebarProps) {
       >
         <i
           className={`ti ${icon}`}
-          style={{
-            fontSize: 17,
-            flexShrink: 0,
-            color: active ? "#6366F1" : "#94A3B8",
-          }}
+          style={{ fontSize: 17, flexShrink: 0, color: active ? "#6366F1" : "#94A3B8" }}
           aria-hidden="true"
         />
         <span style={{ flex: 1 }}>{label}</span>
@@ -76,15 +80,6 @@ export function WorkOrderSidebar({ user }: SidebarProps) {
       </Link>
     );
   };
-
-  const displayName = user?.name ?? "Giselle Georges";
-  const displayRole = user?.role ?? "Administrator";
-  const initials = displayName
-    .split(" ")
-    .map((w) => w[0])
-    .join("")
-    .slice(0, 2)
-    .toUpperCase();
 
   return (
     <aside
@@ -126,27 +121,10 @@ export function WorkOrderSidebar({ user }: SidebarProps) {
           <Settings size={16} color="#fff" strokeWidth={2} />
         </div>
         <div>
-          <p
-            style={{
-              fontSize: 14,
-              fontWeight: 700,
-              color: "#0F172A",
-              margin: 0,
-              letterSpacing: "-0.03em",
-            }}
-          >
+          <p style={{ fontSize: 14, fontWeight: 700, color: "#0F172A", margin: 0, letterSpacing: "-0.03em" }}>
             MaintenancePro
           </p>
-          <p
-            style={{
-              fontSize: 10,
-              color: "#A5B4FC",
-              margin: 0,
-              letterSpacing: "0.1em",
-              textTransform: "uppercase",
-              fontWeight: 600,
-            }}
-          >
+          <p style={{ fontSize: 10, color: "#A5B4FC", margin: 0, letterSpacing: "0.1em", textTransform: "uppercase", fontWeight: 600 }}>
             Enterprise
           </p>
         </div>
@@ -158,34 +136,14 @@ export function WorkOrderSidebar({ user }: SidebarProps) {
           <NavItem key={item.href} {...item} />
         ))}
 
-        <p
-          style={{
-            padding: "20px 22px 7px",
-            fontSize: 9,
-            fontWeight: 700,
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            color: "#C7D2FE",
-            margin: 0,
-          }}
-        >
+        <p style={{ padding: "20px 22px 7px", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#C7D2FE", margin: 0 }}>
           Assets
         </p>
         {NAV_ASSET_ITEMS.map((item) => (
           <NavItem key={item.href} {...item} />
         ))}
 
-        <p
-          style={{
-            padding: "20px 22px 7px",
-            fontSize: 9,
-            fontWeight: 700,
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            color: "#C7D2FE",
-            margin: 0,
-          }}
-        >
+        <p style={{ padding: "20px 22px 7px", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#C7D2FE", margin: 0 }}>
           Config
         </p>
         {NAV_CONFIG_ITEMS.map((item) => (
@@ -193,12 +151,11 @@ export function WorkOrderSidebar({ user }: SidebarProps) {
         ))}
       </nav>
 
-      {/* User footer */}
+      {/* User footer → links to profile */}
       <Link
         href="/profile"
         style={{
           padding: "14px 16px",
-          borderTop: "1px solid #E8EAFF",
           display: "flex",
           alignItems: "center",
           gap: 10,
@@ -219,12 +176,13 @@ export function WorkOrderSidebar({ user }: SidebarProps) {
           (e.currentTarget as HTMLAnchorElement).style.borderColor = "#E0E7FF";
         }}
       >
+        {/* Avatar or initials */}
         <div
           style={{
             width: 34,
             height: 34,
             borderRadius: "50%",
-            background: "linear-gradient(135deg, #6366F1, #8B5CF6)",
+            background: avatarUrl ? "transparent" : "linear-gradient(135deg, #6366F1, #8B5CF6)",
             color: "#fff",
             fontSize: 11,
             fontWeight: 700,
@@ -232,42 +190,25 @@ export function WorkOrderSidebar({ user }: SidebarProps) {
             alignItems: "center",
             justifyContent: "center",
             flexShrink: 0,
+            overflow: "hidden",
             boxShadow: "0 2px 8px rgba(99,102,241,0.3)",
           }}
         >
-          {initials}
+          {avatarUrl
+            ? <img src={avatarUrl} alt={displayName} style={{ width: "100%", height: "100%", objectFit: "cover" }} />
+            : initials || <i className="ti ti-user" style={{ fontSize: 14 }} aria-hidden="true" />}
         </div>
+
         <div style={{ flex: 1, minWidth: 0 }}>
-          <p
-            style={{
-              fontSize: 12,
-              fontWeight: 600,
-              color: "#3730A3",
-              margin: 0,
-              overflow: "hidden",
-              textOverflow: "ellipsis",
-              whiteSpace: "nowrap",
-              letterSpacing: "-0.01em",
-            }}
-          >
-            {displayName}
+          <p style={{ fontSize: 12, fontWeight: 600, color: "#3730A3", margin: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", letterSpacing: "-0.01em" }}>
+            {displayName || "—"}
           </p>
-          <p
-            style={{
-              fontSize: 10,
-              color: "#818CF8",
-              margin: 0,
-              fontWeight: 500,
-            }}
-          >
-            {displayRole}
+          <p style={{ fontSize: 10, color: "#818CF8", margin: 0, fontWeight: 500, textTransform: "capitalize" }}>
+            {displayRole || "—"}
           </p>
         </div>
-        <i
-          className="ti ti-selector"
-          style={{ fontSize: 15, color: "#A5B4FC" }}
-          aria-hidden="true"
-        />
+
+        <i className="ti ti-selector" style={{ fontSize: 15, color: "#A5B4FC" }} aria-hidden="true" />
       </Link>
     </aside>
   );
