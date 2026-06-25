@@ -193,7 +193,8 @@ export function WorkOrderSidebar({ user }: SidebarProps) {
       </nav>
 
       {/* User footer */}
-      <div
+      <Link
+        href="/profile"
         style={{
           padding: "14px 16px",
           borderTop: "1px solid #E8EAFF",
@@ -205,6 +206,16 @@ export function WorkOrderSidebar({ user }: SidebarProps) {
           margin: 8,
           borderRadius: 12,
           border: "1px solid #E0E7FF",
+          textDecoration: "none",
+          transition: "all 0.15s ease",
+        }}
+        onMouseEnter={(e) => {
+          (e.currentTarget as HTMLAnchorElement).style.background = "#EDE9FE";
+          (e.currentTarget as HTMLAnchorElement).style.borderColor = "#C4B5FD";
+        }}
+        onMouseLeave={(e) => {
+          (e.currentTarget as HTMLAnchorElement).style.background = "#F5F3FF";
+          (e.currentTarget as HTMLAnchorElement).style.borderColor = "#E0E7FF";
         }}
       >
         <div
@@ -240,7 +251,14 @@ export function WorkOrderSidebar({ user }: SidebarProps) {
           >
             {displayName}
           </p>
-          <p style={{ fontSize: 10, color: "#818CF8", margin: 0, fontWeight: 500 }}>
+          <p
+            style={{
+              fontSize: 10,
+              color: "#818CF8",
+              margin: 0,
+              fontWeight: 500,
+            }}
+          >
             {displayRole}
           </p>
         </div>
@@ -249,7 +267,7 @@ export function WorkOrderSidebar({ user }: SidebarProps) {
           style={{ fontSize: 15, color: "#A5B4FC" }}
           aria-hidden="true"
         />
-      </div>
+      </Link>
     </aside>
   );
 }

@@ -281,25 +281,7 @@ export function WODetailPanel({
             />
             <ActionBtn icon={<Edit3 size={13} />} label="Edit" accentColor={accentColor} />
             <ActionBtn icon={<MoreHorizontal size={14} />} accentColor={accentColor} />
-            <button
-              style={{
-                display: "inline-flex",
-                alignItems: "center",
-                gap: 6,
-                padding: "7px 13px",
-                borderRadius: 9,
-                border: "none",
-                background: accentColor,
-                color: "#fff",
-                fontSize: 11,
-                fontWeight: 600,
-                cursor: "pointer",
-                boxShadow: `0 3px 10px ${accentColor}50`,
-                transition: "all 0.15s",
-              }}
-            >
-              <Share2 size={12} /> Share
-            </button>
+            
           </div>
         </div>
 
