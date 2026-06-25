@@ -125,7 +125,7 @@ const dispatch = useDispatch();
 
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: "#F8FAFF" }}>
-      <WorkOrderSidebar user={user} />
+      <WorkOrderSidebar  />
 
       <main style={{ flex: 1, overflowY: "auto", padding: "40px 48px" }}>
         {/* ── Page header ── */}
