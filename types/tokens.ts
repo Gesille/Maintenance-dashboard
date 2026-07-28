@@ -95,7 +95,7 @@ export const NAV_ITEMS = [
 ];
 
 export const NAV_ASSET_ITEMS = [
-  { label: "Assets", icon: "ti-building-factory-2", href: "/dashboard/assets" },
+  { label: "Equipment", icon: "ti-building-factory-2", href: "/dashboard/equipment" },
   { label: "Parts inventory", icon: "ti-box", href: "/dashboard/parts" },
   { label: "Locations", icon: "ti-map-pin", href: "/dashboard/locations" },
 ];
