@@ -337,6 +337,11 @@ export function EquipmentDetailPanel({
                 <EquipRow icon={<i className="ti ti-building-store" style={{ fontSize: 13, color: "#A5B4FC" }} />} label="Vendor" value={equipment.vendor} divider />
                 <EquipRow icon={<i className="ti ti-currency-dollar" style={{ fontSize: 13, color: "#A5B4FC" }} />} label="Cost" value={equipment.cost ? `$${equipment.cost}` : null} divider />
                 <EquipRow icon={<i className="ti ti-shield-check" style={{ fontSize: 13, color: "#A5B4FC" }} />} label="Warranty exp." value={equipment.warrantyExpirationDate} divider />
+                <EquipRow icon={<i className="ti ti-currency-dollar" style={{ fontSize: 13, color: "#A5B4FC" }} />} label="Cost" value={equipment.cost ? `$${equipment.cost}` : null} divider />
+<EquipRow icon={<i className="ti ti-calendar-event" style={{ fontSize: 13, color: "#A5B4FC" }} />} label="Assigned date" value={equipment.assignedDate} divider />
+<EquipRow icon={<i className="ti ti-calendar-check" style={{ fontSize: 13, color: "#A5B4FC" }} />} label="Effective date" value={equipment.effectiveDate} divider />
+<EquipRow icon={<i className="ti ti-shield-check" style={{ fontSize: 13, color: "#A5B4FC" }} />} label="Warranty exp." value={equipment.warrantyExpirationDate} divider />
+<EquipRow icon={<i className="ti ti-calendar-x" style={{ fontSize: 13, color: "#A5B4FC" }} />} label="Scrap date" value={equipment.scrapDate} divider />
               </div>
 
               <SectionLabel label="Description" />
