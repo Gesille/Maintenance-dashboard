@@ -17,7 +17,11 @@ interface DeleteResponse {
   success: boolean;
   message: string;
 }
-
+interface GenerateMissingQrResponse {
+  success: boolean;
+  message: string;
+  data: Equipment[];
+}
 export const equipmentApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
     getAllEquipment: builder.query<ListResponse, void>({
@@ -82,6 +86,26 @@ export const equipmentApi = apiSlice.injectEndpoints({
         { type: "Equipment", id: "LIST" },
       ],
     }),
+    generateEquipmentQr: builder.mutation<SingleResponse, number>({
+  query: (id) => ({
+    url: `generate-qr/${id}`,
+    method: "POST",
+    credentials: "include" as const,
+  }),
+  invalidatesTags: (_result, _err, id) => [
+    { type: "Equipment", id },
+    { type: "Equipment", id: "LIST" },
+  ],
+}),
+
+generateMissingQrs: builder.mutation<GenerateMissingQrResponse, void>({
+  query: () => ({
+    url: "generate-missing-qr",
+    method: "POST",
+    credentials: "include" as const,
+  }),
+  invalidatesTags: [{ type: "Equipment", id: "LIST" }],
+}),
   }),
   overrideExisting: false,
 });
@@ -92,4 +116,6 @@ export const {
   useCreateEquipmentMutation,
   useUpdateEquipmentMutation,
   useDeleteEquipmentMutation,
+  useGenerateEquipmentQrMutation,
+  useGenerateMissingQrsMutation
 } = equipmentApi;

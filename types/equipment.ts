@@ -22,6 +22,9 @@ export interface Equipment {
   active?: boolean;
   createdAt?: string;
   updatedAt?: string;
+   qrCodeUrl: string | null;
+  qrPublicId: string | null;
+  qrGenerated: boolean;
 }
 
 // Fields the create/edit form actually submits
@@ -31,23 +34,26 @@ export type EquipmentFormInput = Omit<
 >;
 
 export const EMPTY_EQUIPMENT_FORM: EquipmentFormInput = {
-  name: "",
-  category: null,
-  maintenanceTeam: null,
-  technician: null,
-  owner: null,
-  assignedDate: null,
-  scrapDate: null,
-  usedInLocation: null,
-  restaurant: null,
-  assetCode: null,
-  reference: null,
-  vendor: null,
-  vendorReference: null,
-  model: null,
-  serialNumber: null,
-  effectiveDate: null,
-  cost: 0,
-  warrantyExpirationDate: null,
-  description: null,
+    name: "",
+    category: null,
+    maintenanceTeam: null,
+    technician: null,
+    owner: null,
+    assignedDate: null,
+    scrapDate: null,
+    usedInLocation: null,
+    restaurant: null,
+    assetCode: null,
+    reference: null,
+    vendor: null,
+    vendorReference: null,
+    model: null,
+    serialNumber: null,
+    effectiveDate: null,
+    cost: 0,
+    warrantyExpirationDate: null,
+    description: null,
+    qrCodeUrl: null,
+    qrPublicId: null,
+    qrGenerated: false
 };
