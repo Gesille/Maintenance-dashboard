@@ -336,12 +336,75 @@ export function EquipmentDetailPanel({
                 <EquipRow icon={<i className="ti ti-hash" style={{ fontSize: 13, color: "#A5B4FC" }} />} label="Serial no." value={equipment.serialNumber} divider />
                 <EquipRow icon={<i className="ti ti-building-store" style={{ fontSize: 13, color: "#A5B4FC" }} />} label="Vendor" value={equipment.vendor} divider />
                 <EquipRow icon={<i className="ti ti-currency-dollar" style={{ fontSize: 13, color: "#A5B4FC" }} />} label="Cost" value={equipment.cost ? `$${equipment.cost}` : null} divider />
-                <EquipRow icon={<i className="ti ti-shield-check" style={{ fontSize: 13, color: "#A5B4FC" }} />} label="Warranty exp." value={equipment.warrantyExpirationDate} divider />
-                <EquipRow icon={<i className="ti ti-currency-dollar" style={{ fontSize: 13, color: "#A5B4FC" }} />} label="Cost" value={equipment.cost ? `$${equipment.cost}` : null} divider />
 <EquipRow icon={<i className="ti ti-calendar-event" style={{ fontSize: 13, color: "#A5B4FC" }} />} label="Assigned date" value={equipment.assignedDate} divider />
 <EquipRow icon={<i className="ti ti-calendar-check" style={{ fontSize: 13, color: "#A5B4FC" }} />} label="Effective date" value={equipment.effectiveDate} divider />
 <EquipRow icon={<i className="ti ti-shield-check" style={{ fontSize: 13, color: "#A5B4FC" }} />} label="Warranty exp." value={equipment.warrantyExpirationDate} divider />
 <EquipRow icon={<i className="ti ti-calendar-x" style={{ fontSize: 13, color: "#A5B4FC" }} />} label="Scrap date" value={equipment.scrapDate} divider />
+</div>
+
+<SectionLabel label="QR code" />
+<div
+  style={{
+    background: "#fff",
+    border: "1px solid #E8EAFF",
+    borderRadius: 14,
+    padding: "16px 20px",
+    marginBottom: 24,
+    display: "flex",
+    alignItems: "center",
+    gap: 16,
+    boxShadow: "0 1px 4px rgba(99,102,241,0.05)",
+  }}
+>
+  <div
+    style={{
+      width: 88,
+      height: 88,
+      borderRadius: 10,
+      background: equipment.qrCodeUrl ? "#fff" : "#F8FAFF",
+      border: "1px solid #E8EAFF",
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "center",
+      flexShrink: 0,
+      overflow: "hidden",
+    }}
+  >
+    {equipment.qrCodeUrl ? (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={equipment.qrCodeUrl}
+        alt={`QR for ${equipment.name}`}
+        style={{ width: "100%", height: "100%", objectFit: "contain" }}
+      />
+    ) : (
+      <span style={{ fontSize: 10, color: "#CBD5E1" }}>No QR</span>
+    )}
+  </div>
+  <div style={{ flex: 1, minWidth: 0 }}>
+    <p style={{ fontSize: 12, color: "#64748B", margin: "0 0 8px" }}>
+      {equipment.qrCodeUrl
+        ? "Scan this code to open the damage report form for this equipment."
+        : "No QR code generated yet for this equipment."}
+    </p>
+    <a
+      href="/dashboard/qr-code"
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        fontSize: 12,
+        fontWeight: 600,
+        color: accentColor,
+        textDecoration: "none",
+      }}
+    >
+      {equipment.qrCodeUrl ? "Manage QR codes →" : "Generate QR code →"}
+    </a>
+  </div>
+
+
+<SectionLabel label="Description" />
               </div>
 
               <SectionLabel label="Description" />
