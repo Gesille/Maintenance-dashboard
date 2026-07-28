@@ -23,7 +23,7 @@ export const apiSlice = createApi({
 
     refreshToken: builder.query({
       query: () => ({
-        url: "refresh",
+        url: "refresh-token",
         method: "GET",
       }),
       async onQueryStarted(_arg, { queryFulfilled, dispatch }) {
