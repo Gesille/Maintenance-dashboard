@@ -14,7 +14,7 @@ import {
 } from "@/redux/Equipment/Equipmentapi";
 
 // Adjust this to wherever your app already reads the API base URL from
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "";
+const API_URL = process.env.NEXT_PUBLIC_SERVER_URL ?? "";
 
 export default function QRCodePage() {
   const { data, isLoading, isError, refetch } = useGetAllEquipmentQuery();
