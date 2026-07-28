@@ -36,7 +36,7 @@ export const apiSlice = createApi({
             })
           );
         } catch {
-          // No valid refresh token — user is logged out
+          
         }
       },
     }),
