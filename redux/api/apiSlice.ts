@@ -44,7 +44,7 @@ export const apiSlice = createApi({
     // Load current user (called after refreshToken)
     loadUser: builder.query({
       query: (token) => ({
-        url: "me",
+        url: "get-user-info",
         method: "GET",
         headers: {
           Authorization: `Bearer ${token}`,
