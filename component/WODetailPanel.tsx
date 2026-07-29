@@ -768,66 +768,7 @@ export function WODetailPanel({
               </>
             )}
 
-            {/* Internal notes */}
-            <SectionLabel label="Internal notes" />
-            <div
-              style={{
-                background: "#fff",
-                border: "1px solid #E8EAFF",
-                borderRadius: 14,
-                padding: "14px 16px",
-                boxShadow: "0 1px 4px rgba(99,102,241,0.05)",
-              }}
-            >
-              <textarea
-                value={note}
-                onChange={(e) => setNote(e.target.value)}
-                placeholder="Add a note visible only to your team…"
-                rows={3}
-                style={{
-                  width: "100%",
-                  boxSizing: "border-box",
-                  fontSize: 13,
-                  resize: "vertical",
-                  padding: "10px 12px",
-                  borderRadius: 10,
-                  border: "1.5px solid #E8EAFF",
-                  background: "#FAFBFF",
-                  color: "#334155",
-                  outline: "none",
-                  fontFamily: "inherit",
-                  lineHeight: 1.6,
-                  transition: "border-color 0.15s",
-                }}
-                onFocus={(e) => (e.target.style.borderColor = accentColor)}
-                onBlur={(e) => (e.target.style.borderColor = "#E8EAFF")}
-              />
-              {note.trim() && (
-                <div
-                  style={{
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    marginTop: 8,
-                  }}
-                >
-                  <button
-                    style={{
-                      padding: "7px 16px",
-                      background: accentColor,
-                      color: "#fff",
-                      border: "none",
-                      borderRadius: 8,
-                      fontSize: 12,
-                      fontWeight: 600,
-                      cursor: "pointer",
-                      boxShadow: `0 3px 10px ${accentColor}40`,
-                    }}
-                  >
-                    Save note
-                  </button>
-                </div>
-              )}
-            </div>
+           
           </>
         )}
 
