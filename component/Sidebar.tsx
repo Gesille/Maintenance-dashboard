@@ -17,9 +17,9 @@ export function WorkOrderSidebar() {
     (r) => r.state !== "done" && r.state !== "cancel"
   ).length;
 
- const navItems = NAV_ITEMS.map((item) =>
-    item.label === "Work Orders" ? { ...item, badge: openCount } : item
-  );
+const navItems = NAV_ITEMS.map((item) =>
+  item.href === "/dashboard/work-orders" ? { ...item, badge: openCount } : item
+);
   const displayName: string = user?.name ?? "";
   const displayRole: string = user?.role ?? "";
   const avatarUrl: string | undefined = user?.avatar?.url;
