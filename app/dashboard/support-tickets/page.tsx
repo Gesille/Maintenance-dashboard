@@ -1,67 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { TicketStatus, TicketCategory, useGetAllTicketsQuery, SupportTicket, useUpdateTicketMutation } from "@/redux/Supportticket/Supportticketapi";
 import { useMemo, useState } from "react";
-
-
-// ─────────────────────────────────────────────────────────────────────────────
-// Color config — extends the existing STATUS_CONFIG / CATEGORY_COLORS palette
-// from constants.ts. Suggest moving these two objects into that shared file.
-// ─────────────────────────────────────────────────────────────────────────────
-const TICKET_STATUS_CONFIG: Record<
+import {
   TicketStatus,
-  { label: string; bg: string; text: string; border: string; dot: string; icon: string }
-> = {
-  open: {
-    label: "Open",
-    bg: "#EFF6FF",
-    text: "#1D4ED8",
-    border: "#BFDBFE",
-    dot: "#3B82F6",
-    icon: "ti-lock-open",
-  },
-  in_progress: {
-    label: "In progress",
-    bg: "#F0FDFA",
-    text: "#0F766E",
-    border: "#99F6E4",
-    dot: "#14B8A6",
-    icon: "ti-refresh",
-  },
-  resolved: {
-    label: "Resolved",
-    bg: "#F0FDF4",
-    text: "#15803D",
-    border: "#BBF7D0",
-    dot: "#22C55E",
-    icon: "ti-circle-check",
-  },
-  closed: {
-    label: "Closed",
-    bg: "#F9FAFB",
-    text: "#374151",
-    border: "#E5E7EB",
-    dot: "#9CA3AF",
-    icon: "ti-lock",
-  },
-};
-
-const TICKET_CATEGORY_CONFIG: Record<
   TicketCategory,
-  { label: string; bg: string; text: string; icon: string }
-> = {
-  technical_issue: { label: "Technical issue", bg: "#FDF4FF", text: "#7E22CE", icon: "ti-tool" },
-  request_not_updating: {
-    label: "Request not updating",
-    bg: "#FFFBEB",
-    text: "#92400E",
-    icon: "ti-clock-exclamation",
-  },
-  account_login: { label: "Account / login", bg: "#EFF6FF", text: "#1D4ED8", icon: "ti-user-lock" },
-  equipment: { label: "Equipment", bg: "#FFF7ED", text: "#C2410C", icon: "ti-building-factory-2" },
-  other: { label: "Other", bg: "#F9FAFB", text: "#374151", icon: "ti-dots" },
-};
+  useGetAllTicketsQuery,
+  SupportTicket,
+  useUpdateTicketMutation,
+} from "@/redux/Supportticket/Supportticketapi";
+import { TICKET_STATUS_CONFIG, TICKET_CATEGORY_CONFIG } from "@/types/tokens";
+import { WorkOrderSidebar } from "@/component/Sidebar";
+
 
 const STATUS_ORDER: TicketStatus[] = ["open", "in_progress", "resolved", "closed"];
 
@@ -131,31 +81,44 @@ function Avatar({ name }: { name: string }) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Main page
+// Main page — rendered next to the sidebar
 // ─────────────────────────────────────────────────────────────────────────────
 export default function SupportTicketsPage() {
-  const { data: tickets = [], isLoading, isFetching, isError, error, refetch } = useGetAllTicketsQuery();
-
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<TicketStatus | "all">("all");
   const [categoryFilter, setCategoryFilter] = useState<TicketCategory | "all">("all");
   const [selected, setSelected] = useState<SupportTicket | null>(null);
 
+  // Status filtering happens server-side (the controller already supports
+  // req.query.status). Category has no backend filter yet, so that stays
+  // client-side below — see suggestion #4 note at the bottom of this file.
+  const {
+    data: tickets = [],
+    isLoading,
+    isFetching,
+    isError,
+    error,
+    refetch,
+  } = useGetAllTicketsQuery(statusFilter !== "all" ? { status: statusFilter } : undefined);
+
+  // Counts for the stat cards need the *unfiltered* set, so fetch that too.
+  // RTK Query dedupes/caches this against the same endpoint+args automatically.
+  const { data: allTickets = [] } = useGetAllTicketsQuery(undefined);
+
   const counts = useMemo(() => {
     const base: Record<TicketStatus | "all", number> = {
-      all: tickets.length,
+      all: allTickets.length,
       open: 0,
       in_progress: 0,
       resolved: 0,
       closed: 0,
     };
-    for (const t of tickets) base[t.status]++;
+    for (const t of allTickets) base[t.status]++;
     return base;
-  }, [tickets]);
+  }, [allTickets]);
 
   const filtered = useMemo(() => {
     return tickets.filter((t) => {
-      if (statusFilter !== "all" && t.status !== statusFilter) return false;
       if (categoryFilter !== "all" && t.category !== categoryFilter) return false;
       if (search.trim()) {
         const q = search.toLowerCase();
@@ -164,139 +127,143 @@ export default function SupportTicketsPage() {
       }
       return true;
     });
-  }, [tickets, statusFilter, categoryFilter, search]);
+  }, [tickets, categoryFilter, search]);
 
   // Keep the open drawer in sync with fresh data after a mutation refetches the list
   const selectedLive = selected ? tickets.find((t) => t.id === selected.id) ?? selected : null;
 
   return (
-    <div className="min-h-screen bg-[#FAFAFA] px-6 py-6 lg:px-10 lg:py-8">
-      {/* Header */}
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold text-[#111827]">Support Tickets</h1>
-          <p className="mt-1 text-sm text-[#6B7280]">
-            {isLoading ? "Loading…" : `${tickets.length} ticket${tickets.length === 1 ? "" : "s"} total`}
-          </p>
-        </div>
-        <button
-          onClick={() => refetch()}
-          className="inline-flex items-center gap-2 rounded-lg border border-[#E5E7EB] bg-white px-3.5 py-2 text-sm font-medium text-[#374151] transition hover:bg-[#F9FAFB]"
-        >
-          <i className={`ti ti-refresh text-base ${isFetching ? "animate-spin" : ""}`} />
-          Refresh
-        </button>
-      </div>
+    <div style={{ display: "flex", minHeight: "100vh" }}>
+      <WorkOrderSidebar />
 
-      {/* Stat cards */}
-      <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
-        <StatCard
-          label="All tickets"
-          value={counts.all}
-          active={statusFilter === "all"}
-          onClick={() => setStatusFilter("all")}
-        />
-        {STATUS_ORDER.map((s) => (
+      <div className="min-h-screen flex-1 bg-[#FAFAFA] px-6 py-6 lg:px-10 lg:py-8">
+        {/* Header */}
+        <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-semibold text-[#111827]">Support Tickets</h1>
+            <p className="mt-1 text-sm text-[#6B7280]">
+              {isLoading ? "Loading…" : `${counts.all} ticket${counts.all === 1 ? "" : "s"} total`}
+            </p>
+          </div>
+          <button
+            onClick={() => refetch()}
+            className="inline-flex items-center gap-2 rounded-lg border border-[#E5E7EB] bg-white px-3.5 py-2 text-sm font-medium text-[#374151] transition hover:bg-[#F9FAFB]"
+          >
+            <i className={`ti ti-refresh text-base ${isFetching ? "animate-spin" : ""}`} />
+            Refresh
+          </button>
+        </div>
+
+        {/* Stat cards */}
+        <div className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
           <StatCard
-            key={s}
-            label={TICKET_STATUS_CONFIG[s].label}
-            value={counts[s]}
-            color={TICKET_STATUS_CONFIG[s]}
-            active={statusFilter === s}
-            onClick={() => setStatusFilter(s)}
+            label="All tickets"
+            value={counts.all}
+            active={statusFilter === "all"}
+            onClick={() => setStatusFilter("all")}
           />
-        ))}
-      </div>
-
-      {/* Toolbar */}
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="relative min-w-[220px] flex-1">
-          <i className="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search by subject, name, or email…"
-            className="w-full rounded-lg border border-[#E5E7EB] bg-white py-2 pl-9 pr-3 text-sm text-[#111827] outline-none placeholder:text-[#9CA3AF] focus:border-[#93C5FD] focus:ring-2 focus:ring-[#DBEAFE]"
-          />
-        </div>
-        <select
-          value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value as TicketCategory | "all")}
-          className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm text-[#374151] outline-none focus:border-[#93C5FD] focus:ring-2 focus:ring-[#DBEAFE]"
-        >
-          <option value="all">All categories</option>
-          {(Object.keys(TICKET_CATEGORY_CONFIG) as TicketCategory[]).map((c) => (
-            <option key={c} value={c}>
-              {TICKET_CATEGORY_CONFIG[c].label}
-            </option>
+          {STATUS_ORDER.map((s) => (
+            <StatCard
+              key={s}
+              label={TICKET_STATUS_CONFIG[s].label}
+              value={counts[s]}
+              color={TICKET_STATUS_CONFIG[s]}
+              active={statusFilter === s}
+              onClick={() => setStatusFilter(s)}
+            />
           ))}
-        </select>
-      </div>
+        </div>
 
-      {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-[#E5E7EB] bg-white">
-        {isLoading ? (
-          <div className="p-10 text-center text-sm text-[#9CA3AF]">Loading tickets…</div>
-        ) : isError ? (
-          <div className="p-10 text-center text-sm text-[#B91C1C]">
-            <i className="ti ti-alert-circle mb-2 block text-2xl" />
-            {(error as any)?.data?.message || "Failed to load tickets."}
+        {/* Toolbar */}
+        <div className="mb-4 flex flex-wrap items-center gap-3">
+          <div className="relative min-w-[220px] flex-1">
+            <i className="ti ti-search absolute left-3 top-1/2 -translate-y-1/2 text-[#9CA3AF]" />
+            <input
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search by subject, name, or email…"
+              className="w-full rounded-lg border border-[#E5E7EB] bg-white py-2 pl-9 pr-3 text-sm text-[#111827] outline-none placeholder:text-[#9CA3AF] focus:border-[#93C5FD] focus:ring-2 focus:ring-[#DBEAFE]"
+            />
           </div>
-        ) : filtered.length === 0 ? (
-          <div className="p-10 text-center text-sm text-[#9CA3AF]">
-            <i className="ti ti-ticket mb-2 block text-2xl" />
-            No tickets match these filters.
-          </div>
-        ) : (
-          <table className="w-full text-left text-sm">
-            <thead>
-              <tr className="border-b border-[#E5E7EB] bg-[#F9FAFB] text-xs uppercase tracking-wide text-[#6B7280]">
-                <th className="px-4 py-3 font-medium">Ticket</th>
-                <th className="px-4 py-3 font-medium">Requester</th>
-                <th className="px-4 py-3 font-medium">Category</th>
-                <th className="px-4 py-3 font-medium">Subject</th>
-                <th className="px-4 py-3 font-medium">Status</th>
-                <th className="px-4 py-3 font-medium">Created</th>
-                <th className="px-4 py-3 font-medium" />
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((t) => (
-                <tr
-                  key={t.id}
-                  onClick={() => setSelected(t)}
-                  className="cursor-pointer border-b border-[#F3F4F6] transition last:border-0 hover:bg-[#F9FAFB]"
-                >
-                  <td className="px-4 py-3 font-mono text-xs text-[#6B7280]">{shortId(t.id)}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex items-center gap-2.5">
-                      <Avatar name={t.userName} />
-                      <div>
-                        <div className="font-medium text-[#111827]">{t.userName}</div>
-                        <div className="text-xs text-[#6B7280]">{t.userEmail}</div>
-                      </div>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <CategoryBadge category={t.category} />
-                  </td>
-                  <td className="max-w-[240px] truncate px-4 py-3 text-[#374151]">{t.subject}</td>
-                  <td className="px-4 py-3">
-                    <StatusBadge status={t.status} />
-                  </td>
-                  <td className="px-4 py-3 text-[#6B7280]">{timeAgo(t.createdAt)}</td>
-                  <td className="px-4 py-3 text-right">
-                    <i className="ti ti-chevron-right text-[#9CA3AF]" />
-                  </td>
+          <select
+            value={categoryFilter}
+            onChange={(e) => setCategoryFilter(e.target.value as TicketCategory | "all")}
+            className="rounded-lg border border-[#E5E7EB] bg-white px-3 py-2 text-sm text-[#374151] outline-none focus:border-[#93C5FD] focus:ring-2 focus:ring-[#DBEAFE]"
+          >
+            <option value="all">All categories</option>
+            {(Object.keys(TICKET_CATEGORY_CONFIG) as TicketCategory[]).map((c) => (
+              <option key={c} value={c}>
+                {TICKET_CATEGORY_CONFIG[c].label}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* Table */}
+        <div className="overflow-hidden rounded-xl border border-[#E5E7EB] bg-white">
+          {isLoading ? (
+            <div className="p-10 text-center text-sm text-[#9CA3AF]">Loading tickets…</div>
+          ) : isError ? (
+            <div className="p-10 text-center text-sm text-[#B91C1C]">
+              <i className="ti ti-alert-circle mb-2 block text-2xl" />
+              {(error as any)?.data?.message || "Failed to load tickets."}
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="p-10 text-center text-sm text-[#9CA3AF]">
+              <i className="ti ti-ticket mb-2 block text-2xl" />
+              No tickets match these filters.
+            </div>
+          ) : (
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-[#E5E7EB] bg-[#F9FAFB] text-xs uppercase tracking-wide text-[#6B7280]">
+                  <th className="px-4 py-3 font-medium">Ticket</th>
+                  <th className="px-4 py-3 font-medium">Requester</th>
+                  <th className="px-4 py-3 font-medium">Category</th>
+                  <th className="px-4 py-3 font-medium">Subject</th>
+                  <th className="px-4 py-3 font-medium">Status</th>
+                  <th className="px-4 py-3 font-medium">Created</th>
+                  <th className="px-4 py-3 font-medium" />
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+              </thead>
+              <tbody>
+                {filtered.map((t) => (
+                  <tr
+                    key={t.id}
+                    onClick={() => setSelected(t)}
+                    className="cursor-pointer border-b border-[#F3F4F6] transition last:border-0 hover:bg-[#F9FAFB]"
+                  >
+                    <td className="px-4 py-3 font-mono text-xs text-[#6B7280]">{shortId(t.id)}</td>
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-2.5">
+                        <Avatar name={t.userName} />
+                        <div>
+                          <div className="font-medium text-[#111827]">{t.userName}</div>
+                          <div className="text-xs text-[#6B7280]">{t.userEmail}</div>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <CategoryBadge category={t.category} />
+                    </td>
+                    <td className="max-w-[240px] truncate px-4 py-3 text-[#374151]">{t.subject}</td>
+                    <td className="px-4 py-3">
+                      <StatusBadge status={t.status} />
+                    </td>
+                    <td className="px-4 py-3 text-[#6B7280]">{timeAgo(t.createdAt)}</td>
+                    <td className="px-4 py-3 text-right">
+                      <i className="ti ti-chevron-right text-[#9CA3AF]" />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+        </div>
 
-      {/* Detail drawer */}
-      {selectedLive && <TicketDrawer ticket={selectedLive} onClose={() => setSelected(null)} />}
+        {/* Detail drawer */}
+        {selectedLive && <TicketDrawer ticket={selectedLive} onClose={() => setSelected(null)} />}
+      </div>
     </div>
   );
 }
@@ -468,23 +435,23 @@ function TicketDrawer({ ticket, onClose }: { ticket: SupportTicket; onClose: () 
 }
 
 /* ─────────────────────────────────────────────────────────────────────────────
-SUGGESTED ADDITIONS
+On the 4 suggestions from before:
 
-1) Move TICKET_STATUS_CONFIG / TICKET_CATEGORY_CONFIG into your shared
-   constants.ts, next to STATUS_CONFIG / CATEGORY_COLORS, so any other page
-   that touches tickets (e.g. a user-facing "my tickets" view) stays visually
-   consistent with this one.
+1) DONE — TICKET_STATUS_CONFIG / TICKET_CATEGORY_CONFIG now live in
+   types/tokens.ts next to STATUS_CONFIG / CATEGORY_COLORS.
 
-2) Sidebar: NAV_ITEMS has "Support Tickets" with a hardcoded badge: 1. Wire it
-   to counts.open from this page's data (or a lightweight separate query) so
-   the sidebar reflects the real open-ticket count.
+2) DONE — WorkOrderSidebar.tsx now queries getAllTickets and shows a live
+   open+in_progress count on the Support Tickets nav item.
 
-3) Backend gap: PUT update-ticket/:id lets admins set adminReply, but nothing
-   emails the requester when a reply lands. Worth adding a sendMail() call in
-   updateTicket (same pattern as createTicket) the first time adminReply is set.
+3) Email-on-reply: see the updated support_ticket.controller.ts — updateTicket
+   now sends the requester an email the first time adminReply is set.
 
-4) This page loads all tickets via getAllTickets and filters client-side.
-   Fine at low volume; once ticket count grows, move status/category
-   filtering into query params server-side and drop the "params" object I
-   already stubbed into the getAllTickets endpoint.
+4) PARTIAL — status filtering now happens server-side via the status query
+   param your controller already supports (getAllTicketsQuery re-fetches with
+   {status} instead of filtering client-side). Category filtering is still
+   client-side because getAllTickets has no category param yet; add
+   `const { category } = req.query;` to the filter object in getAllTickets
+   alongside `status` if you want that server-side too — it's a one-line
+   change on the backend, then swap `categoryFilter` into the query args here
+   the same way `statusFilter` is used.
 ───────────────────────────────────────────────────────────────────────────── */

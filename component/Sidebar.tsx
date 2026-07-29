@@ -7,6 +7,7 @@ import { useSelector } from "react-redux";
 import { Settings } from "lucide-react";
 import { NAV_ASSET_ITEMS, NAV_CONFIG_ITEMS, NAV_ITEMS } from "@/types/tokens";
 import { useGetAllMaintenanceRequestsQuery } from "@/redux/Maintenance/Maintenanceapi";
+import { useGetAllTicketsQuery } from "@/redux/Supportticket/Supportticketapi";
 
 export function WorkOrderSidebar() {
   const pathname = usePathname();
@@ -17,9 +18,18 @@ export function WorkOrderSidebar() {
     (r) => r.state !== "done" && r.state !== "cancel"
   ).length;
 
-const navItems = NAV_ITEMS.map((item) =>
-  item.href === "/dashboard/work-orders" ? { ...item, badge: openCount } : item
-);
+  // getAllTickets unwraps to SupportTicket[] via transformResponse
+  const { data: tickets } = useGetAllTicketsQuery();
+  const openTicketCount = (tickets ?? []).filter(
+    (t) => t.status === "open" || t.status === "in_progress"
+  ).length;
+
+  const navItems = NAV_ITEMS.map((item) => {
+    if (item.href === "/dashboard/work-orders") return { ...item, badge: openCount };
+    if (item.href === "/dashboard/support-tickets") return { ...item, badge: openTicketCount };
+    return item;
+  });
+
   const displayName: string = user?.name ?? "";
   const displayRole: string = user?.role ?? "";
   const avatarUrl: string | undefined = user?.avatar?.url;
@@ -141,9 +151,9 @@ const navItems = NAV_ITEMS.map((item) =>
 
       {/* Nav */}
       <nav style={{ flex: 1, paddingTop: 12, overflowY: "auto" }}>
-       {navItems.map((item) => (
-  <NavItem key={item.href} {...item} />
-))}
+        {navItems.map((item) => (
+          <NavItem key={item.href} {...item} />
+        ))}
 
         <p style={{ padding: "20px 22px 7px", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#C7D2FE", margin: 0 }}>
           Assets

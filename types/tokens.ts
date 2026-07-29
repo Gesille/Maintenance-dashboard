@@ -1,4 +1,5 @@
 import { Assignee, WOPriority, WOStatus } from "./types";
+import { TicketStatus, TicketCategory } from "@/redux/Supportticket/Supportticketapi";
 
 
 // ── Status config ─────────────────────────────────────────────────────────────
@@ -84,6 +85,62 @@ export const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
   "HVAC / Refrigeration":{ bg: "#F0FDFA", text: "#0F766E" },
   Sanitation:            { bg: "#FDF4FF", text: "#7E22CE" },
   General:               { bg: "#F9FAFB", text: "#374151" },
+};
+
+// ── Support ticket status config ──────────────────────────────────────────────
+export const TICKET_STATUS_CONFIG: Record<
+  TicketStatus,
+  { label: string; bg: string; text: string; border: string; dot: string; icon: string }
+> = {
+  open: {
+    label: "Open",
+    bg: "#EFF6FF",
+    text: "#1D4ED8",
+    border: "#BFDBFE",
+    dot: "#3B82F6",
+    icon: "ti-lock-open",
+  },
+  in_progress: {
+    label: "In progress",
+    bg: "#F0FDFA",
+    text: "#0F766E",
+    border: "#99F6E4",
+    dot: "#14B8A6",
+    icon: "ti-refresh",
+  },
+  resolved: {
+    label: "Resolved",
+    bg: "#F0FDF4",
+    text: "#15803D",
+    border: "#BBF7D0",
+    dot: "#22C55E",
+    icon: "ti-circle-check",
+  },
+  closed: {
+    label: "Closed",
+    bg: "#F9FAFB",
+    text: "#374151",
+    border: "#E5E7EB",
+    dot: "#9CA3AF",
+    icon: "ti-lock",
+  },
+};
+
+// ── Support ticket category config ────────────────────────────────────────────
+export const TICKET_CATEGORY_CONFIG: Record<
+  TicketCategory,
+  { label: string; bg: string; text: string; icon: string }
+> = {
+  technical_issue: { label: "Technical issue", bg: "#FDF4FF", text: "#7E22CE", icon: "ti-tool" },
+  request_not_updating: {
+    label: "Request not updating",
+    bg: "#FFFBEB",
+    text: "#92400E",
+    icon: "ti-clock-exclamation",
+  },
+  account_login: { label: "Account / login", bg: "#EFF6FF", text: "#1D4ED8", icon: "ti-user-lock" },
+  equipment: { label: "Equipment", bg: "#FFF7ED", text: "#C2410C", icon: "ti-building-factory-2" },
+  other: { label: "Other", bg: "#F9FAFB", text: "#374151", icon: "ti-dots" },
 };
 
 // ── Sidebar nav items ─────────────────────────────────────────────────────────
