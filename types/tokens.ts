@@ -88,7 +88,7 @@ export const CATEGORY_COLORS: Record<string, { bg: string; text: string }> = {
 
 // ── Sidebar nav items ─────────────────────────────────────────────────────────
 export const NAV_ITEMS = [
-  { label: "Work orders", icon: "ti-clipboard-list", badge: 3, href: "/dashboard/work-orders" },
+  { label: "Work orders", icon: "ti-clipboard-list",  href: "/dashboard/work-orders" },
   { label: "Purchase orders", icon: "ti-shopping-cart", href: "/dashboard/purchase-orders" },
   { label: "Reporting", icon: "ti-chart-bar", href: "/dashboard/reporting" },
   { label: "Requests", icon: "ti-message-circle", badge: 1, href: "/dashboard/requests" },
