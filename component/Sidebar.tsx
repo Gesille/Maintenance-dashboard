@@ -162,7 +162,7 @@ const navItems = NAV_ITEMS.map((item) =>
 
       {/* User footer → links to profile */}
       <Link
-        href="/app/profile"
+        href="/profile"
         style={{
           padding: "14px 16px",
           display: "flex",
