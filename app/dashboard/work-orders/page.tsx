@@ -113,7 +113,7 @@ function toWorkOrder(r: MaintenanceRequest, index: number): WorkOrder {
     requestedBy: r.createdBy?.name ?? "Unknown",
     status,
     priority: mapPriority(r.priority),
-   
+   restaurant: r.equipment?.restaurant ?? "—",
     scheduleEnd: formatDate(r.scheduleEnd),
     createDate: formatDate(r.createDate),
     duration: r.duration,

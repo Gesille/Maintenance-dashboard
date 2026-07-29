@@ -26,6 +26,7 @@ export interface MaintenanceRequest {
     location: { id: number; name: string } | string | null;
     assetCode: string | null;
     serialNo: string | null;
+    restaurant: string | null; 
     model: string | null;
   } | null;
   category: { id: number; name: string } | null;

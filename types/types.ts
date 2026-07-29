@@ -37,7 +37,7 @@ export interface WorkOrder {
   serialNo: string | null;
   model: string | null;
   location: string;
-
+restaurant: string;
   // Classification
   category: string;           
   categoryLabel: string;     

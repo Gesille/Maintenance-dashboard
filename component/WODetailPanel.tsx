@@ -474,6 +474,7 @@ export function WODetailPanel({
             >
               <EquipRow icon={<Wrench size={13} color="#A5B4FC" />} label="Asset" value={wo.asset} />
               <EquipRow icon={<MapPin size={13} color="#A5B4FC" />} label="Location" value={wo.location} divider />
+              <EquipRow icon={<MapPin size={13} color="#A5B4FC" />} label="Restaurant" value={wo.restaurant} divider />
               <EquipRow icon={<Tag size={13} color="#A5B4FC" />} label="Category" value={wo.categoryLabel} divider />
               {wo.maintenanceType !== "—" && (
                 <EquipRow
