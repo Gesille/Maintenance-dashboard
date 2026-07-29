@@ -33,10 +33,12 @@ function formatDate(iso: string | null | undefined): string {
   if (!iso) return "—";
   const d = new Date(iso);
   if (isNaN(d.getTime())) return iso;
-  return d.toLocaleDateString("en-US", {
+  return d.toLocaleString("en-US", {
     month: "short",
     day: "numeric",
     year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
   });
 }
 
@@ -111,7 +113,7 @@ function toWorkOrder(r: MaintenanceRequest, index: number): WorkOrder {
     requestedBy: r.createdBy?.name ?? "Unknown",
     status,
     priority: mapPriority(r.priority),
-    dueDate: formatDate(r.scheduleDate),
+   
     scheduleEnd: formatDate(r.scheduleEnd),
     createDate: formatDate(r.createDate),
     duration: r.duration,

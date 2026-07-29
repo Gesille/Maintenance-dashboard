@@ -24,7 +24,7 @@ export interface WorkOrder {
   priority: WOPriority;
 
   // Dates
-  dueDate: string;
+  
   scheduleEnd: string;
   createDate: string;
   duration: number;

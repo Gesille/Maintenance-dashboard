@@ -379,7 +379,7 @@ export function WOListPanel({ workOrders, selectedId, onSelect, onNew }: WOListP
                 }}
               >
                 <i className="ti ti-user" style={{ fontSize: 11 }} aria-hidden="true" />
-                {wo.requestedBy} · {wo.dueDate}
+                {wo.requestedBy} · {wo.createDate}
               </p>
 
               {/* Badges + avatars */}

@@ -3,7 +3,7 @@
 import { useState } from "react";
 import {
   MessageSquare,
-  Edit3,
+ 
   MoreHorizontal,
   Share2,
   Calendar,
@@ -279,7 +279,7 @@ export function WODetailPanel({
               active={tab === "comments"}
               accentColor={accentColor}
             />
-            <ActionBtn icon={<Edit3 size={13} />} label="Edit" accentColor={accentColor} />
+            
             <ActionBtn icon={<MoreHorizontal size={14} />} accentColor={accentColor} />
             
           </div>
@@ -414,51 +414,51 @@ export function WODetailPanel({
           <>
             {/* 4-col KPI cards */}
             <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(4, 1fr)",
-                gap: 10,
-                marginBottom: 28,
-              }}
-            >
-              <KpiCard
-                icon={<Calendar size={15} color={accentColor} />}
-                label="Due date"
-                value={wo.dueDate}
-                accent={accentColor}
-              />
-              <KpiCard
-                icon={
-                  <span
-                    style={{
-                      fontSize: 12,
-                      fontWeight: 700,
-                      background: priority.bg,
-                      color: priority.text,
-                      padding: "1px 8px",
-                      borderRadius: 99,
-                    }}
-                  >
-                    {priority.label}
-                  </span>
-                }
-                label="Priority"
-                value={null}
-                accent={accentColor}
-              />
-              <KpiCard
-                icon={<Clock size={15} color={accentColor} />}
-                label="Duration"
-                value={`${wo.duration}h`}
-                accent={accentColor}
-              />
-              <KpiCard
-                icon={<i className="ti ti-calendar-event" style={{ fontSize: 15, color: accentColor }} aria-hidden="true" />}
-                label="Ends"
-                value={wo.scheduleEnd}
-                accent={accentColor}
-              />
-            </div>
+  style={{
+    display: "grid",
+    gridTemplateColumns: "repeat(4, 1fr)",
+    gap: 10,
+    marginBottom: 28,
+  }}
+>
+  <KpiCard
+    icon={<Calendar size={15} color={accentColor} />}
+    label="Created"
+    value={wo.createDate}
+    accent={accentColor}
+  />
+  <KpiCard
+    icon={
+      <span
+        style={{
+          fontSize: 12,
+          fontWeight: 700,
+          background: priority.bg,
+          color: priority.text,
+          padding: "1px 8px",
+          borderRadius: 99,
+        }}
+      >
+        {priority.label}
+      </span>
+    }
+    label="Priority"
+    value={null}
+    accent={accentColor}
+  />
+  <KpiCard
+    icon={<Clock size={15} color={accentColor} />}
+    label="Duration"
+    value={`${wo.duration}h`}
+    accent={accentColor}
+  />
+  <KpiCard
+    icon={<i className="ti ti-calendar-check" style={{ fontSize: 15, color: accentColor }} aria-hidden="true" />}
+    label="Closed"
+    value={wo.completedOn ?? "—"}
+    accent={accentColor}
+  />
+</div>
 
             {/* Equipment */}
             <SectionLabel label="Equipment" />
