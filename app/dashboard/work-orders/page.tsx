@@ -76,10 +76,13 @@ function mapState(state: RepairState): WOStatus {
   }
 }
 
-function mapPriority(label: string): WOPriority {
-  if (label === "High" || label === "Very Urgent") return "high";
-  if (label === "Normal") return "medium";
-  return "low";
+function mapPriority(p?: string | null): WOPriority {
+  switch ((p ?? "").toLowerCase()) {
+    case "high":   return "high";
+    case "medium": return "medium";
+    case "low":    return "low";
+    default:       return "low";
+  }
 }
 
 function normCategory(name: string | null | undefined): string {
