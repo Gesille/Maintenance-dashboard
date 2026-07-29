@@ -6,11 +6,20 @@ import { usePathname } from "next/navigation";
 import { useSelector } from "react-redux";
 import { Settings } from "lucide-react";
 import { NAV_ASSET_ITEMS, NAV_CONFIG_ITEMS, NAV_ITEMS } from "@/types/tokens";
+import { useGetAllMaintenanceRequestsQuery } from "@/redux/Maintenance/Maintenanceapi";
 
 export function WorkOrderSidebar() {
   const pathname = usePathname();
   const user = useSelector((state: any) => state.auth.user);
 
+  const { data } = useGetAllMaintenanceRequestsQuery();
+  const openCount = (data?.data?.requests ?? []).filter(
+    (r) => r.state !== "done" && r.state !== "cancel"
+  ).length;
+
+ const navItems = NAV_ITEMS.map((item) =>
+    item.label === "Work Orders" ? { ...item, badge: openCount } : item
+  );
   const displayName: string = user?.name ?? "";
   const displayRole: string = user?.role ?? "";
   const avatarUrl: string | undefined = user?.avatar?.url;
@@ -132,9 +141,9 @@ export function WorkOrderSidebar() {
 
       {/* Nav */}
       <nav style={{ flex: 1, paddingTop: 12, overflowY: "auto" }}>
-        {NAV_ITEMS.map((item) => (
-          <NavItem key={item.href} {...item} />
-        ))}
+       {navItems.map((item) => (
+  <NavItem key={item.href} {...item} />
+))}
 
         <p style={{ padding: "20px 22px 7px", fontSize: 9, fontWeight: 700, letterSpacing: "0.12em", textTransform: "uppercase", color: "#C7D2FE", margin: 0 }}>
           Assets
