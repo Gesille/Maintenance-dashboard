@@ -23,7 +23,9 @@ import {
 } from "@/types/tokens";
 import { WorkOrder, WOStatus } from "@/types/types";
 import {
+  useAssignTechniciansMutation,
   useGetMaintenanceMessagesQuery,
+  useGetTechniciansQuery,
   usePostMaintenanceCommentMutation,
 } from "@/redux/Maintenance/Maintenanceapi";
 
@@ -90,6 +92,27 @@ export function WODetailPanel({
       setCommentBody("");
     } catch (err) {
       console.error("Failed to post comment:", err);
+    }
+  };
+  const [assignOpen, setAssignOpen] = useState(false);
+  const [selectedTechIds, setSelectedTechIds] = useState<string[]>([]);
+  const { data: technicians = [] } = useGetTechniciansQuery();
+  const [assignTechnicians, { isLoading: assigning }] = useAssignTechniciansMutation();
+
+  const toggleTech = (id: string) =>
+    setSelectedTechIds((prev) =>
+      prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id]
+    );
+
+  const handleAssign = async () => {
+    const chosen = technicians.filter((t) => selectedTechIds.includes(t.id));
+    if (chosen.length === 0) return;
+    try {
+      await assignTechnicians({ id: wo.numericId, technicians: chosen }).unwrap();
+      setAssignOpen(false);
+      setSelectedTechIds([]);
+    } catch (err) {
+      console.error("Failed to assign technicians:", err);
     }
   };
 
@@ -511,7 +534,80 @@ export function WODetailPanel({
             </div>
 
             {/* Assignees */}
-            <SectionLabel label="Assigned technicians" />
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+              <SectionLabel label="Assigned technicians" />
+              <button
+                onClick={() => setAssignOpen((o) => !o)}
+                style={{
+                  fontSize: 11,
+                  fontWeight: 600,
+                  color: accentColor,
+                  background: `${accentColor}10`,
+                  border: `1.5px solid ${accentColor}40`,
+                  borderRadius: 8,
+                  padding: "5px 10px",
+                  cursor: "pointer",
+                }}
+              >
+                {assignOpen ? "Cancel" : "+ Assign"}
+              </button>
+            </div>
+
+            {assignOpen && (
+              <div
+                style={{
+                  background: "#fff",
+                  border: "1px solid #E8EAFF",
+                  borderRadius: 12,
+                  padding: 14,
+                  marginBottom: 16,
+                  boxShadow: "0 2px 8px rgba(99,102,241,0.08)",
+                }}
+              >
+                {technicians.length === 0 ? (
+                  <p style={{ fontSize: 12, color: "#94A3B8", margin: 0 }}>
+                    No technician accounts found.
+                  </p>
+                ) : (
+                  <div style={{ display: "flex", flexDirection: "column", gap: 8, maxHeight: 180, overflowY: "auto" }}>
+                    {technicians.map((t) => (
+                      <label
+                        key={t.id}
+                        style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, cursor: "pointer" }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={selectedTechIds.includes(t.id)}
+                          onChange={() => toggleTech(t.id)}
+                          style={{ accentColor }}
+                        />
+                        <span style={{ fontWeight: 600, color: "#0F172A" }}>{t.name}</span>
+                        <span style={{ color: "#94A3B8", fontSize: 11 }}>{t.email}</span>
+                      </label>
+                    ))}
+                  </div>
+                )}
+                <button
+                  onClick={handleAssign}
+                  disabled={assigning || selectedTechIds.length === 0}
+                  style={{
+                    marginTop: 12,
+                    width: "100%",
+                    padding: "9px 0",
+                    background: assigning || selectedTechIds.length === 0 ? "#E8EAFF" : accentColor,
+                    color: assigning || selectedTechIds.length === 0 ? "#A5B4FC" : "#fff",
+                    border: "none",
+                    borderRadius: 8,
+                    fontSize: 12,
+                    fontWeight: 700,
+                    cursor: assigning || selectedTechIds.length === 0 ? "not-allowed" : "pointer",
+                  }}
+                >
+                  {assigning ? "Saving & emailing…" : "Save & Notify"}
+                </button>
+              </div>
+            )}
+
             <div
               style={{
                 display: "flex",
@@ -522,13 +618,7 @@ export function WODetailPanel({
               }}
             >
               {wo.assignees.length === 0 ? (
-                <span
-                  style={{
-                    fontSize: 13,
-                    color: "#94A3B8",
-                    fontStyle: "italic",
-                  }}
-                >
+                <span style={{ fontSize: 13, color: "#94A3B8", fontStyle: "italic" }}>
                   No assignees
                 </span>
               ) : (
@@ -567,14 +657,7 @@ export function WODetailPanel({
                       >
                         {a.initials}
                       </div>
-                      <span
-                        style={{
-                          fontSize: 12,
-                          color: "#334155",
-                          fontWeight: 600,
-                          letterSpacing: "-0.01em",
-                        }}
-                      >
+                      <span style={{ fontSize: 12, color: "#334155", fontWeight: 600, letterSpacing: "-0.01em" }}>
                         {a.name}
                       </span>
                     </div>

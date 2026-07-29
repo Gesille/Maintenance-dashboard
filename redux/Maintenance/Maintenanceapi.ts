@@ -31,7 +31,7 @@ export interface MaintenanceRequest {
   } | null;
   category: { id: number; name: string } | null;
   maintenanceTeam: { id: number; name: string } | null;
-  technicians: { id: number; name: string }[];
+  technicians: { id: string; name: string; email: string }[];
   createdBy: { id: number; name: string } | null;
   createDate: string | null;
   scheduleDate: string | null;
@@ -88,12 +88,41 @@ interface StatusUpdateResponse {
   success: boolean;
   data: MaintenanceRequest | null;
 }
+export interface Technician {
+  id: string;
+  name: string;
+  email: string;
+}
 
+interface TechniciansResponse {
+  success: boolean;
+  data: Technician[];
+}
 // ── Slice ─────────────────────────────────────────────────────────────────────
 
 export const maintenanceApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
+getTechnicians: builder.query<Technician[], void>({
+  query: () => ({
+    url: "technicians",
+    method: "GET",
+    credentials: "include" as const,
+  }),
+  transformResponse: (res: TechniciansResponse) => res.data,
+}),
 
+assignTechnicians: builder.mutation<
+  StatusUpdateResponse,
+  { id: number; technicians: Technician[] }
+>({
+  query: ({ id, technicians }) => ({
+    url: `assign-technicians/${id}`,
+    method: "PATCH",
+    body: { technicians },
+    credentials: "include" as const,
+  }),
+  invalidatesTags: ["MaintenanceRequests"],
+}),
     getAllMaintenanceRequests: builder.query<ListResponse, void>({
       query: () => ({
         url: "get-requests",
@@ -162,4 +191,6 @@ export const {
   useUpdateMaintenanceStatusMutation,
   useGetMaintenanceMessagesQuery,
   usePostMaintenanceCommentMutation,
+  useAssignTechniciansMutation,
+  useGetTechniciansQuery
 } = maintenanceApi;
