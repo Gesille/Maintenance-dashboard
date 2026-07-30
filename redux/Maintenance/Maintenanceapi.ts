@@ -20,6 +20,7 @@ export interface MaintenanceRequest {
   state: RepairState;
   maintenanceType: string;
   stage: StageInfo;
+  media: { url: string; type: "image" | "video" }[];
   equipment: {
     id: number;
     name: string;

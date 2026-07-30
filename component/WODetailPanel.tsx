@@ -690,7 +690,33 @@ export function WODetailPanel({
                 {wo.description}
               </p>
             </div>
-
+{wo.media?.length > 0 && (
+  <div style={{ marginTop: 16 }}>
+    <h4 style={{ fontSize: 13, fontWeight: 600, color: "#374151", marginBottom: 8 }}>
+      Attachments
+    </h4>
+    <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+      {wo.media.map((m, i) =>
+        m.type === "video" ? (
+          <video
+            key={i}
+            src={m.url}
+            controls
+            style={{ width: 160, height: 120, borderRadius: 8, objectFit: "cover" }}
+          />
+        ) : (
+          <a key={i} href={m.url} target="_blank" rel="noopener noreferrer">
+            <img
+              src={m.url}
+              alt={`attachment-${i}`}
+              style={{ width: 160, height: 120, borderRadius: 8, objectFit: "cover" }}
+            />
+          </a>
+        )
+      )}
+    </div>
+  </div>
+)}
             {/* Checklist */}
             {wo.checklist.length > 0 && (
               <>

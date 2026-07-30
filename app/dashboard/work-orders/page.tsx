@@ -139,6 +139,7 @@ function toWorkOrder(r: MaintenanceRequest, index: number): WorkOrder {
       name: t.name,
       color: avatarColor(index + i),
     })),
+    media: r.media ?? [],
     checklist: [],
   };
 }

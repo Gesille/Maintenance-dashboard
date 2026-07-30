@@ -22,7 +22,7 @@ export interface WorkOrder {
   requestedBy: string;
   status: WOStatus;
   priority: WOPriority;
-
+media: { url: string; type: "image" | "video" }[];
   // Dates
   
   scheduleEnd: string;
