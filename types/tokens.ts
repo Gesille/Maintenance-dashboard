@@ -145,10 +145,10 @@ export const TICKET_CATEGORY_CONFIG: Record<
 
 // ── Sidebar nav items ─────────────────────────────────────────────────────────
 export const NAV_ITEMS = [
-  { label: "Work orders", icon: "ti-clipboard-list",  href: "/dashboard/work-orders" },
+  { label: "Work order & Requests", icon: "ti-clipboard-list",  href: "/dashboard/work-orders" },
   { label: "Support Tickets", icon: "ti-ticket", href: "/dashboard/support-tickets" },
   { label: "Reporting", icon: "ti-chart-bar", href: "/dashboard/reporting" },
-  { label: "Requests", icon: "ti-message-circle", badge: 1, href: "/dashboard/requests" },
+
 ];
 
 export const NAV_ASSET_ITEMS = [
