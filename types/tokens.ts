@@ -142,8 +142,6 @@ export const TICKET_CATEGORY_CONFIG: Record<
   equipment: { label: "Equipment", bg: "#FFF7ED", text: "#C2410C", icon: "ti-building-factory-2" },
   other: { label: "Other", bg: "#F9FAFB", text: "#374151", icon: "ti-dots" },
 };
-
-// ── Sidebar nav items ─────────────────────────────────────────────────────────
 export const NAV_ITEMS = [
   { label: "Work order & Requests", icon: "ti-clipboard-list",  href: "/dashboard/work-orders" },
   { label: "Purchase Orders", icon: "ti-clipboard-list",  href: "/dashboard/purchase-orders" },
