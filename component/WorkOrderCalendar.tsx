@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { CalendarClock, ChevronLeft, ChevronRight, X } from "lucide-react";
 import { WorkOrder, WOPriority } from "@/types/types";
 
 // ─── Config ─────────────────────────────────────────────────────────────────
@@ -100,7 +101,7 @@ export function WorkOrderCalendar({ workOrders, selectedId, onSelect }: WorkOrde
 
   const handleSelect = (wo: WorkOrder) => {
     onSelect(wo);
-    setIsOpen(false); // close modal after picking an event, feels natural — drop this line if you want it to stay open
+    setIsOpen(false);
   };
 
   return (
@@ -132,19 +133,7 @@ export function WorkOrderCalendar({ workOrders, selectedId, onSelect }: WorkOrde
             (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 1px 3px rgba(15,23,42,0.04)";
           }}
         >
-          <div
-            style={{
-              width: 20,
-              height: 20,
-              borderRadius: 6,
-              background: "linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-            }}
-          >
-            <i className="ti ti-calendar-time" style={{ fontSize: 11, color: "#fff" }} aria-hidden="true" />
-          </div>
+          <CalendarClock size={17} color="#6366F1" strokeWidth={2} />
         </button>
         {unscheduled.length > 0 && (
           <span
@@ -223,7 +212,7 @@ export function WorkOrderCalendar({ workOrders, selectedId, onSelect }: WorkOrde
                     flexShrink: 0,
                   }}
                 >
-                  <i className="ti ti-calendar-time" style={{ fontSize: 16, color: "#fff" }} aria-hidden="true" />
+                  <CalendarClock size={16} color="#fff" strokeWidth={2} />
                 </div>
                 <div>
                   <p style={{ fontSize: 14, fontWeight: 700, color: "#1E1B4B", margin: 0, letterSpacing: "-0.01em" }}>
@@ -251,7 +240,7 @@ export function WorkOrderCalendar({ workOrders, selectedId, onSelect }: WorkOrde
                   </span>
                 )}
                 <button onClick={() => setWeekStart((d) => addDays(d, -7))} aria-label="Previous week" style={navBtnStyle}>
-                  <i className="ti ti-chevron-left" style={{ fontSize: 15 }} aria-hidden="true" />
+                  <ChevronLeft size={15} color="#475569" strokeWidth={2} />
                 </button>
                 <button
                   onClick={() => setWeekStart(startOfWeek(new Date()))}
@@ -260,14 +249,14 @@ export function WorkOrderCalendar({ workOrders, selectedId, onSelect }: WorkOrde
                   Today
                 </button>
                 <button onClick={() => setWeekStart((d) => addDays(d, 7))} aria-label="Next week" style={navBtnStyle}>
-                  <i className="ti ti-chevron-right" style={{ fontSize: 15 }} aria-hidden="true" />
+                  <ChevronRight size={15} color="#475569" strokeWidth={2} />
                 </button>
                 <button
                   onClick={() => setIsOpen(false)}
                   aria-label="Close calendar"
                   style={{ ...navBtnStyle, marginLeft: 4, background: "#F8FAFC" }}
                 >
-                  <i className="ti ti-x" style={{ fontSize: 15 }} aria-hidden="true" />
+                  <X size={15} color="#475569" strokeWidth={2} />
                 </button>
               </div>
             </div>
