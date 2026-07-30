@@ -186,7 +186,7 @@ assignTechnicians: builder.mutation<
   { id: number; scheduleDate: string }
 >({
   query: ({ id, scheduleDate }) => ({
-    url: `maintenance/${id}/schedule`,
+    url: `maintenance-schedule/${id}`,
     method: "PATCH",
     body: { scheduleDate },
   }),
