@@ -384,46 +384,36 @@ export default function WorkOrdersPage() {
       }}
     >
       <WorkOrderSidebar />
-  <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
-        <div
-          style={{
-            display: "flex",
-            justifyContent: "flex-end",
-            padding: "10px 20px 0",
-            flexShrink: 0,
-          }}
-        >
-          <WorkOrderCalendar
-            workOrders={workOrders}
-            selectedId={effectiveId}
-            onSelect={(wo) => setSelectedId(wo.id)}
-          />
-        </div>
-
-        <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-          <WOListPanel
-            workOrders={workOrders}
-            selectedId={effectiveId}
-            onSelect={handleSelect}
-            onNew={handleNew}
-          />
-          <NewWorkOrderModal
-            open={newOrderOpen}
-            onClose={() => setNewOrderOpen(false)}
-            onSubmit={handleCreateWorkOrder}
-            equipmentOptions={equipmentOptions}
-            technicianOptions={technicians}
-            isSubmitting={creating}
-          />
-          {selectedWO && (
-            <WODetailPanel
-              wo={selectedWO}
-              onStatusChange={handleStatusChange}
-              onChecklistToggle={handleChecklistToggle}
-              updatingId={updatingId}
+      <main style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+      <WOListPanel
+          workOrders={workOrders}
+          selectedId={effectiveId}
+          onSelect={handleSelect}
+          onNew={handleNew}
+          headerActions={
+            <WorkOrderCalendar
+              workOrders={workOrders}
+              selectedId={effectiveId}
+              onSelect={(wo) => setSelectedId(wo.id)}
             />
-          )}
-        </div>
+          }
+        />
+        <NewWorkOrderModal
+          open={newOrderOpen}
+          onClose={() => setNewOrderOpen(false)}
+          onSubmit={handleCreateWorkOrder}
+          equipmentOptions={equipmentOptions}
+          technicianOptions={technicians}
+          isSubmitting={creating}
+        />
+        {selectedWO && (
+          <WODetailPanel
+            wo={selectedWO}
+            onStatusChange={handleStatusChange}
+            onChecklistToggle={handleChecklistToggle}
+            updatingId={updatingId}
+          />
+        )}
       </main>
     </div>
   );
