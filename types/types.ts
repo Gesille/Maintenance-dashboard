@@ -45,7 +45,7 @@ restaurant: string;
   maintenanceType: string;
   stage: string;
   isRecurring: boolean;
-
+scheduleDateRaw?: string | null;
   // Content
   description: string;
   assignees: Assignee[];
