@@ -186,7 +186,7 @@ assignTechnicians: builder.mutation<
   FormData
 >({
   query: (formData) => ({
-    url: "create-request",
+    url: "create-request-manager",
     method: "POST",
     body: formData,
   }),
