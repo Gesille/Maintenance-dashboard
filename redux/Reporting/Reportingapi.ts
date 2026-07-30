@@ -113,7 +113,7 @@ export const reportingApi = apiSlice.injectEndpoints({
     }),
   }),
   overrideExisting: false,
-});//
+});
 
 export const {
   useGetReportingSummaryQuery,
