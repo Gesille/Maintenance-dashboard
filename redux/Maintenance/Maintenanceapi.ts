@@ -181,6 +181,17 @@ assignTechnicians: builder.mutation<
         { type: "MaintenanceMessages" as any, id },
       ],
     }),
+    createMaintenanceRequest: builder.mutation<
+  { success: boolean; data: MaintenanceRequest },
+  FormData
+>({
+  query: (formData) => ({
+    url: "create-request",
+    method: "POST",
+    body: formData,
+  }),
+  invalidatesTags: ["MaintenanceRequests"], 
+}),
   }),
 
   overrideExisting: false,
@@ -193,5 +204,6 @@ export const {
   useGetMaintenanceMessagesQuery,
   usePostMaintenanceCommentMutation,
   useAssignTechniciansMutation,
-  useGetTechniciansQuery
+  useGetTechniciansQuery,
+  useCreateMaintenanceRequestMutation
 } = maintenanceApi;

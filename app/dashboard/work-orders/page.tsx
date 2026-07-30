@@ -9,9 +9,13 @@ import { AVATAR_COLORS } from "@/types/tokens";
 import {
   MaintenanceRequest,
   RepairState,
+  useCreateMaintenanceRequestMutation,
   useGetAllMaintenanceRequestsQuery,
+  useGetTechniciansQuery,
 } from "@/redux/Maintenance/Maintenanceapi";
 import { useUpdateMaintenanceStatusMutation } from "@/redux/Maintenance/Maintenanceapi";
+import { NewWorkOrderModal } from "@/component/NewWorkOrderModal";
+import { useGetAllEquipmentQuery } from "@/redux/Equipment/Equipmentapi";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -150,16 +154,35 @@ export default function WorkOrdersPage() {
   const { data, isLoading, isError, refetch } =
     useGetAllMaintenanceRequestsQuery();
   const [updateStatus] = useUpdateMaintenanceStatusMutation();
-
+const [createWorkOrder, { isLoading: creating }] = useCreateMaintenanceRequestMutation();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [statusOverrides, setStatusOverrides] = useState<Record<string, WOStatus>>({});
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-
+const { data: technicians = [] } = useGetTechniciansQuery();
   const baseWorkOrders: WorkOrder[] = useMemo(
     () => (data?.data?.requests ?? []).map((r, i) => toWorkOrder(r, i)),
     [data]
   );
+const [newOrderOpen, setNewOrderOpen] = useState(false);
+  const handleNew = useCallback(() => setNewOrderOpen(true), []);
+const { data: equipmentData } = useGetAllEquipmentQuery();
 
+const equipmentOptions = useMemo(
+  () =>
+    (equipmentData?.data ?? [])
+      .filter((e) => e.active !== false) 
+      .map((e) => ({
+        id: e.id,
+        name: e.name,
+        assetCode: e.assetCode,
+        restaurant: e.restaurant,
+      })),
+  [equipmentData]
+);
+  const handleCreateWorkOrder = async (formData: FormData) => {
+    await createWorkOrder(formData).unwrap();
+    refetch();
+  };
   const workOrders: WorkOrder[] = useMemo(
     () =>
       baseWorkOrders.map((wo) =>
@@ -196,7 +219,7 @@ export default function WorkOrdersPage() {
   );
 
   const handleChecklistToggle = useCallback((_id: string, _index: number) => {}, []);
-  const handleNew = useCallback(() => console.log("Open new work order form"), []);
+  
 
   // ── Loading state ──
   if (isLoading) {
@@ -346,6 +369,14 @@ export default function WorkOrdersPage() {
           onSelect={handleSelect}
           onNew={handleNew}
         />
+        <NewWorkOrderModal
+    open={newOrderOpen}
+    onClose={() => setNewOrderOpen(false)}
+    onSubmit={handleCreateWorkOrder}
+    equipmentOptions={equipmentOptions}
+    technicianOptions={technicians}
+    isSubmitting={creating}
+  />
         {selectedWO && (
           <WODetailPanel
             wo={selectedWO}
