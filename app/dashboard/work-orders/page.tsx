@@ -12,6 +12,7 @@ import {
   useCreateMaintenanceRequestMutation,
   useGetAllMaintenanceRequestsQuery,
   useGetTechniciansQuery,
+  useUpdateMaintenanceScheduleMutation,
 } from "@/redux/Maintenance/Maintenanceapi";
 import { useUpdateMaintenanceStatusMutation } from "@/redux/Maintenance/Maintenanceapi";
 import { NewWorkOrderModal } from "@/component/NewWorkOrderModal";
@@ -137,6 +138,7 @@ function toWorkOrder(r: MaintenanceRequest, index: number): WorkOrder {
     duration: r.duration,
     overdue,
     completedOn: status === "done" ? formatDate(r.closeDate) : undefined,
+    closeDateRaw: status === "done" ? r.closeDate : null,
     description: stripHtml(r.description),
     asset: r.equipment?.name ?? "—",
     assetCode: r.equipment?.assetCode ?? null,
@@ -210,7 +212,32 @@ export default function WorkOrdersPage() {
   const selectedWO = workOrders.find((wo) => wo.id === effectiveId) ?? null;
 
   const handleSelect = useCallback((wo: WorkOrder) => setSelectedId(wo.id), []);
+ const [updateSchedule] = useUpdateMaintenanceScheduleMutation(); 
+ const lastRepairByAsset: Record<string, string> = useMemo(() => {
+    const map: Record<string, string> = {};
+    for (const wo of workOrders as (WorkOrder & { closeDateRaw?: string | null })[]) {
+      if (wo.status !== "done" || !wo.closeDateRaw) continue;
+      const key = wo.assetCode || wo.asset;
+      if (!key) continue;
+      if (!map[key] || new Date(wo.closeDateRaw) > new Date(map[key])) {
+        map[key] = wo.closeDateRaw;
+      }
+    }
+    return map;
+  }, [workOrders]);
 
+  const handleSchedule = useCallback(
+    async (id: string, isoDate: string) => {
+      try {
+        const numericId = parseInt(id.replace("#", ""));
+        await updateSchedule({ id: numericId, scheduleDate: isoDate }).unwrap();
+        refetch();
+      } catch (err) {
+        console.error("Schedule update failed:", err);
+      }
+    },
+    [updateSchedule, refetch],
+  );
   const handleStatusChange = useCallback(
     async (id: string, status: WOStatus) => {
       setStatusOverrides((prev) => ({ ...prev, [id]: status }));
@@ -395,6 +422,8 @@ export default function WorkOrdersPage() {
               workOrders={workOrders}
               selectedId={effectiveId}
               onSelect={(wo) => setSelectedId(wo.id)}
+              onSchedule={handleSchedule}
+              lastRepairByAsset={lastRepairByAsset}
             />
           }
         />

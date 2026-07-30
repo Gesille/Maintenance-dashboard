@@ -1,14 +1,14 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CalendarClock, ChevronLeft, ChevronRight, X } from "lucide-react";
+import { CalendarClock, ChevronLeft, ChevronRight, X, Clock } from "lucide-react";
 import { WorkOrder, WOPriority } from "@/types/types";
 
 // ─── Config ─────────────────────────────────────────────────────────────────
 
-const START_HOUR = 6;   // 6:00 AM
-const END_HOUR = 20;    // 8:00 PM
-const ROW_HEIGHT = 44;  // px per hour
+const START_HOUR = 6;
+const END_HOUR = 20;
+const ROW_HEIGHT = 44;
 const DAY_COUNT = 7;
 
 const PRIORITY_COLOR: Record<WOPriority, { bg: string; border: string; text: string }> = {
@@ -21,8 +21,8 @@ const PRIORITY_COLOR: Record<WOPriority, { bg: string; border: string; text: str
 
 function startOfWeek(d: Date): Date {
   const date = new Date(d);
-  const day = date.getDay(); // 0 = Sunday
-  const diff = day === 0 ? -6 : 1 - day; // week starts Monday
+  const day = date.getDay();
+  const diff = day === 0 ? -6 : 1 - day;
   date.setDate(date.getDate() + diff);
   date.setHours(0, 0, 0, 0);
   return date;
@@ -59,19 +59,37 @@ function formatHour(h: number): string {
   return `${hour12} ${period}`;
 }
 
+function formatDateShort(d: Date): string {
+  return d.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" });
+}
+
 // ─── Component ──────────────────────────────────────────────────────────────
 
 interface WorkOrderCalendarProps {
-  workOrders: WorkOrder[]; // expects each item to optionally carry `scheduleDateRaw`
+  workOrders: WorkOrder[];
   selectedId: string | null;
   onSelect: (wo: WorkOrder) => void;
+  onSchedule?: (id: string, isoDate: string) => void; // NEW
+  lastRepairByAsset?: Record<string, string>; // NEW — assetCode/asset → ISO date
 }
 
 type ScheduledWO = WorkOrder & { scheduleDateRaw?: string | null };
 
-export function WorkOrderCalendar({ workOrders, selectedId, onSelect }: WorkOrderCalendarProps) {
+interface PendingSlot {
+  date: Date; // exact clicked date + time (rounded to nearest 30 min)
+}
+
+export function WorkOrderCalendar({
+  workOrders,
+  selectedId,
+  onSelect,
+  onSchedule,
+  lastRepairByAsset = {},
+}: WorkOrderCalendarProps) {
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
   const [isOpen, setIsOpen] = useState(false);
+  const [pendingSlot, setPendingSlot] = useState<PendingSlot | null>(null);
+  const [pickedWOId, setPickedWOId] = useState<string>("");
 
   const days = useMemo(
     () => Array.from({ length: DAY_COUNT }, (_, i) => addDays(weekStart, i)),
@@ -85,7 +103,6 @@ export function WorkOrderCalendar({ workOrders, selectedId, onSelect }: WorkOrde
   const eventsByDay = useMemo(() => {
     const map = new Map<number, ScheduledWO[]>();
     days.forEach((_, i) => map.set(i, []));
-
     for (const wo of scheduled) {
       const date = new Date(wo.scheduleDateRaw as string);
       if (isNaN(date.getTime())) continue;
@@ -104,9 +121,36 @@ export function WorkOrderCalendar({ workOrders, selectedId, onSelect }: WorkOrde
     setIsOpen(false);
   };
 
+  // ── Click empty grid area → open "schedule a work order here" dialog ──
+  const handleSlotClick = (e: React.MouseEvent<HTMLDivElement>, day: Date) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const offsetY = e.clientY - rect.top;
+    let hourFloat = START_HOUR + offsetY / ROW_HEIGHT;
+    hourFloat = Math.min(Math.max(hourFloat, START_HOUR), END_HOUR);
+    // round to nearest 30 min
+    hourFloat = Math.round(hourFloat * 2) / 2;
+
+    const date = new Date(day);
+    date.setHours(Math.floor(hourFloat), (hourFloat % 1) * 60, 0, 0);
+
+    setPickedWOId(unscheduled[0]?.id ?? "");
+    setPendingSlot({ date });
+  };
+
+  const confirmSchedule = () => {
+    if (!pendingSlot || !pickedWOId || !onSchedule) return;
+    onSchedule(pickedWOId, pendingSlot.date.toISOString());
+    setPendingSlot(null);
+    setPickedWOId("");
+  };
+
+  const pickedWO = unscheduled.find((wo) => wo.id === pickedWOId) ?? null;
+  const lastRepairKey = pickedWO ? (pickedWO.assetCode || pickedWO.asset) : null;
+  const lastRepairIso = lastRepairKey ? lastRepairByAsset[lastRepairKey] : null;
+
   return (
     <>
-      {/* ── Trigger button (sits next to "+ New") ── */}
+      {/* ── Trigger button ── */}
       <div style={{ position: "relative", flexShrink: 0 }}>
         <button
           onClick={() => setIsOpen(true)}
@@ -160,7 +204,7 @@ export function WorkOrderCalendar({ workOrders, selectedId, onSelect }: WorkOrde
         )}
       </div>
 
-      {/* ── Modal ── */}
+      {/* ── Calendar modal ── */}
       {isOpen && (
         <div
           onClick={() => setIsOpen(false)}
@@ -218,7 +262,9 @@ export function WorkOrderCalendar({ workOrders, selectedId, onSelect }: WorkOrde
                   <p style={{ fontSize: 14, fontWeight: 700, color: "#1E1B4B", margin: 0, letterSpacing: "-0.01em" }}>
                     Repair Schedule
                   </p>
-                  <p style={{ fontSize: 12, color: "#818CF8", margin: 0 }}>{formatWeekRange(weekStart, weekEnd)}</p>
+                  <p style={{ fontSize: 12, color: "#818CF8", margin: 0 }}>
+                    {formatWeekRange(weekStart, weekEnd)} · click an empty slot to schedule
+                  </p>
                 </div>
               </div>
 
@@ -263,7 +309,6 @@ export function WorkOrderCalendar({ workOrders, selectedId, onSelect }: WorkOrde
 
             {/* Grid */}
             <div style={{ display: "flex", overflowY: "auto", flex: 1 }}>
-              {/* Hour rail */}
               <div style={{ width: 52, flexShrink: 0, paddingTop: 28 }}>
                 {hours.map((h) => (
                   <div
@@ -282,7 +327,6 @@ export function WorkOrderCalendar({ workOrders, selectedId, onSelect }: WorkOrde
                 ))}
               </div>
 
-              {/* Day columns */}
               <div style={{ flex: 1, display: "flex" }}>
                 {days.map((day, i) => {
                   const isToday = isSameDay(day, today);
@@ -325,7 +369,11 @@ export function WorkOrderCalendar({ workOrders, selectedId, onSelect }: WorkOrde
                         </span>
                       </div>
 
-                      <div style={{ position: "relative", height: hours.length * ROW_HEIGHT }}>
+                      {/* Clickable empty area — click anywhere here to schedule */}
+                      <div
+                        style={{ position: "relative", height: hours.length * ROW_HEIGHT, cursor: onSchedule ? "pointer" : "default" }}
+                        onClick={onSchedule ? (e) => handleSlotClick(e, day) : undefined}
+                      >
                         {hours.map((h) => (
                           <div key={h} style={{ height: ROW_HEIGHT, borderTop: "1px solid #F8FAFC" }} />
                         ))}
@@ -345,7 +393,10 @@ export function WorkOrderCalendar({ workOrders, selectedId, onSelect }: WorkOrde
                           return (
                             <button
                               key={wo.id}
-                              onClick={() => handleSelect(wo)}
+                              onClick={(e) => {
+                                e.stopPropagation(); // don't also trigger the slot-click handler
+                                handleSelect(wo);
+                              }}
                               title={`${wo.title} — ${timeLabel}`}
                               style={{
                                 position: "absolute",
@@ -383,6 +434,153 @@ export function WorkOrderCalendar({ workOrders, selectedId, onSelect }: WorkOrde
                     </div>
                   );
                 })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── Schedule dialog (Outlook-style "new event" popup) ── */}
+      {pendingSlot && (
+        <div
+          onClick={() => setPendingSlot(null)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15, 23, 42, 0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1100,
+            padding: 24,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "min(380px, 100%)",
+              background: "#fff",
+              borderRadius: 14,
+              boxShadow: "0 20px 60px rgba(15,23,42,0.35)",
+              overflow: "hidden",
+            }}
+          >
+            <div
+              style={{
+                padding: "14px 18px",
+                borderBottom: "1px solid #F1F5F9",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <Clock size={15} color="#6366F1" />
+                <span style={{ fontSize: 13, fontWeight: 700, color: "#1E1B4B" }}>Schedule repair</span>
+              </div>
+              <button onClick={() => setPendingSlot(null)} style={{ ...navBtnStyle, background: "#F8FAFC" }}>
+                <X size={14} color="#475569" />
+              </button>
+            </div>
+
+            <div style={{ padding: 18, display: "flex", flexDirection: "column", gap: 12 }}>
+              <div>
+                <p style={{ fontSize: 11, color: "#94A3B8", margin: "0 0 4px", fontWeight: 600 }}>WHEN</p>
+                <p style={{ fontSize: 13, color: "#1E293B", margin: 0, fontWeight: 600 }}>
+                  {formatDateShort(pendingSlot.date)} ·{" "}
+                  {pendingSlot.date.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                </p>
+              </div>
+
+              <div>
+                <p style={{ fontSize: 11, color: "#94A3B8", margin: "0 0 4px", fontWeight: 600 }}>WORK ORDER</p>
+                {unscheduled.length === 0 ? (
+                  <p style={{ fontSize: 12, color: "#94A3B8", margin: 0 }}>
+                    Nothing unscheduled — every open work order already has a date.
+                  </p>
+                ) : (
+                  <select
+                    value={pickedWOId}
+                    onChange={(e) => setPickedWOId(e.target.value)}
+                    style={{
+                      width: "100%",
+                      padding: "8px 10px",
+                      borderRadius: 8,
+                      border: "1.5px solid #E0E7FF",
+                      fontSize: 12,
+                      color: "#0F172A",
+                      outline: "none",
+                    }}
+                  >
+                    {unscheduled.map((wo) => (
+                      <option key={wo.id} value={wo.id}>
+                        {wo.id} · {wo.title}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+
+              {pickedWO && (
+                <div
+                  style={{
+                    background: "#F8FAFF",
+                    border: "1px solid #EEF0FF",
+                    borderRadius: 8,
+                    padding: "8px 10px",
+                    fontSize: 11,
+                    color: "#64748B",
+                  }}
+                >
+                  <strong style={{ color: "#475569" }}>{pickedWO.asset}</strong>
+                  <br />
+                  Last repaired:{" "}
+                  {lastRepairIso
+                    ? new Date(lastRepairIso).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })
+                    : "No previous repairs on file"}
+                </div>
+              )}
+
+              <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
+                <button
+                  onClick={() => setPendingSlot(null)}
+                  style={{
+                    flex: 1,
+                    padding: "9px 0",
+                    borderRadius: 9,
+                    border: "1px solid #E5E7EB",
+                    background: "#fff",
+                    color: "#475569",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmSchedule}
+                  disabled={!pickedWOId}
+                  style={{
+                    flex: 1,
+                    padding: "9px 0",
+                    borderRadius: 9,
+                    border: "none",
+                    background: pickedWOId
+                      ? "linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)"
+                      : "#CBD5E1",
+                    color: "#fff",
+                    fontSize: 12,
+                    fontWeight: 600,
+                    cursor: pickedWOId ? "pointer" : "not-allowed",
+                  }}
+                >
+                  Schedule
+                </button>
               </div>
             </div>
           </div>

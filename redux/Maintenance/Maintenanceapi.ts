@@ -181,6 +181,17 @@ assignTechnicians: builder.mutation<
         { type: "MaintenanceMessages" as any, id },
       ],
     }),
+    updateMaintenanceSchedule: builder.mutation<
+  { success: boolean; data: MaintenanceRequest },
+  { id: number; scheduleDate: string }
+>({
+  query: ({ id, scheduleDate }) => ({
+    url: `/maintenance/${id}/schedule`,
+    method: "PATCH",
+    body: { scheduleDate },
+  }),
+  invalidatesTags: ["MaintenanceRequests"], // match whatever tag you use for the list
+}),
     createMaintenanceRequest: builder.mutation<
   { success: boolean; data: MaintenanceRequest },
   FormData
@@ -192,6 +203,7 @@ assignTechnicians: builder.mutation<
   }),
   invalidatesTags: ["MaintenanceRequests"], 
 }),
+
   }),
 
   overrideExisting: false,
@@ -205,5 +217,6 @@ export const {
   usePostMaintenanceCommentMutation,
   useAssignTechniciansMutation,
   useGetTechniciansQuery,
-  useCreateMaintenanceRequestMutation
+  useCreateMaintenanceRequestMutation,
+  useUpdateMaintenanceScheduleMutation
 } = maintenanceApi;

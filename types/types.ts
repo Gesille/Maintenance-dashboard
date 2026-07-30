@@ -30,7 +30,7 @@ media: { url: string; type: "image" | "video" }[];
   duration: number;
   overdue: boolean;
   completedOn?: string;
-
+closeDateRaw?: string | null;
   // Equipment
   asset: string;
   assetCode: string | null;
