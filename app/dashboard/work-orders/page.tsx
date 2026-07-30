@@ -16,7 +16,6 @@ import {
 import { useUpdateMaintenanceStatusMutation } from "@/redux/Maintenance/Maintenanceapi";
 import { NewWorkOrderModal } from "@/component/NewWorkOrderModal";
 import { useGetAllEquipmentQuery } from "@/redux/Equipment/Equipmentapi";
-import { WorkOrderCalendar } from "@/component/WorkOrderCalendar";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -365,11 +364,6 @@ const equipmentOptions = useMemo(
     >
       <WorkOrderSidebar />
       <main style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-         <WorkOrderCalendar
-    workOrders={workOrders}
-    selectedId={effectiveId}
-    onSelect={(wo) => setSelectedId(wo.id)}
-  />
         <WOListPanel
           workOrders={workOrders}
           selectedId={effectiveId}
