@@ -12,6 +12,7 @@ interface WOListProps {
   selectedId: string | null;
   onSelect: (wo: WorkOrder) => void;
   onNew: () => void;
+  headerActions?: React.ReactNode; 
 }
 
 const CATEGORY_META: Record<string, { dot: string; bg: string; text: string }> = {
@@ -22,7 +23,7 @@ const CATEGORY_META: Record<string, { dot: string; bg: string; text: string }> =
   General:              { dot: "#6B7280", bg: "#F9FAFB", text: "#374151" },
 };
 
-export function WOListPanel({ workOrders, selectedId, onSelect, onNew }: WOListProps) {
+export function WOListPanel({ workOrders, selectedId, onSelect, onNew , headerActions }: WOListProps) {
   const [tab, setTab] = useState<Tab>("open");
   const [search, setSearch] = useState("");
 
@@ -130,6 +131,8 @@ export function WOListPanel({ workOrders, selectedId, onSelect, onNew }: WOListP
               )}
             </div>
           </div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {headerActions}
           <button
             onClick={onNew}
             style={{
@@ -161,6 +164,7 @@ export function WOListPanel({ workOrders, selectedId, onSelect, onNew }: WOListP
           >
             <Plus size={13} strokeWidth={2.5} /> New
           </button>
+          </div>
         </div>
 
         {/* Search */}

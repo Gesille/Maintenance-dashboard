@@ -105,8 +105,8 @@ export function WorkOrderCalendar({ workOrders, selectedId, onSelect }: WorkOrde
 
   return (
     <>
-      {/* ── Trigger button (compact, fixed size, won't stretch) ── */}
-      <div style={{ position: "relative", flexShrink: 0, alignSelf: "flex-start" }}>
+      {/* ── Trigger button (sits next to "+ New") ── */}
+      <div style={{ position: "relative", flexShrink: 0 }}>
         <button
           onClick={() => setIsOpen(true)}
           title="Repair Schedule"
@@ -114,20 +114,28 @@ export function WorkOrderCalendar({ workOrders, selectedId, onSelect }: WorkOrde
             width: 36,
             height: 36,
             borderRadius: 10,
-            border: "1px solid #E5E7EB",
+            border: "1px solid #E0E7FF",
             background: "#fff",
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            boxShadow: "0 1px 2px rgba(16,24,40,0.05)",
-            flexShrink: 0,
+            boxShadow: "0 1px 3px rgba(15,23,42,0.04)",
+            transition: "all 0.15s ease",
+          }}
+          onMouseEnter={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.borderColor = "#C7D2FE";
+            (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 4px 12px rgba(99,102,241,0.1)";
+          }}
+          onMouseLeave={(e) => {
+            (e.currentTarget as HTMLButtonElement).style.borderColor = "#E0E7FF";
+            (e.currentTarget as HTMLButtonElement).style.boxShadow = "0 1px 3px rgba(15,23,42,0.04)";
           }}
         >
           <div
             style={{
-              width: 22,
-              height: 22,
+              width: 20,
+              height: 20,
               borderRadius: 6,
               background: "linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)",
               display: "flex",
@@ -135,22 +143,22 @@ export function WorkOrderCalendar({ workOrders, selectedId, onSelect }: WorkOrde
               justifyContent: "center",
             }}
           >
-            <i className="ti ti-calendar-time" style={{ fontSize: 12, color: "#fff" }} aria-hidden="true" />
+            <i className="ti ti-calendar-time" style={{ fontSize: 11, color: "#fff" }} aria-hidden="true" />
           </div>
         </button>
         {unscheduled.length > 0 && (
           <span
             style={{
               position: "absolute",
-              top: -6,
-              right: -6,
-              minWidth: 16,
-              height: 16,
-              padding: "0 4px",
+              top: -5,
+              right: -5,
+              minWidth: 15,
+              height: 15,
+              padding: "0 3px",
               borderRadius: 999,
               background: "#F59E0B",
               color: "#fff",
-              fontSize: 10,
+              fontSize: 9,
               fontWeight: 700,
               display: "flex",
               alignItems: "center",
