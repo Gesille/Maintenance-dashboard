@@ -70,7 +70,7 @@ type ScheduledWO = WorkOrder & { scheduleDateRaw?: string | null };
 
 export function WorkOrderCalendar({ workOrders, selectedId, onSelect }: WorkOrderCalendarProps) {
   const [weekStart, setWeekStart] = useState(() => startOfWeek(new Date()));
-  const [collapsed, setCollapsed] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
 
   const days = useMemo(
     () => Array.from({ length: DAY_COUNT }, (_, i) => addDays(weekStart, i)),
@@ -98,223 +98,296 @@ export function WorkOrderCalendar({ workOrders, selectedId, onSelect }: WorkOrde
   const hours = Array.from({ length: END_HOUR - START_HOUR + 1 }, (_, i) => START_HOUR + i);
   const today = new Date();
 
+  const handleSelect = (wo: WorkOrder) => {
+    onSelect(wo);
+    setIsOpen(false); // close modal after picking an event, feels natural — drop this line if you want it to stay open
+  };
+
   return (
-    <div
-      style={{
-        borderBottom: "1px solid #E5E7EB",
-        background: "#FFFFFF",
-        flexShrink: 0,
-      }}
-    >
-      {/* ── Header bar ── */}
-      <div
+    <>
+      {/* ── Trigger button ── */}
+      <button
+        onClick={() => setIsOpen(true)}
         style={{
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
-          padding: "12px 20px",
+          gap: 10,
+          padding: "8px 14px",
+          margin: "12px 20px",
+          background: "#FFFFFF",
+          border: "1px solid #E5E7EB",
+          borderRadius: 12,
+          cursor: "pointer",
+          boxShadow: "0 1px 2px rgba(16,24,40,0.05)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div
+        <div
+          style={{
+            width: 28,
+            height: 28,
+            borderRadius: 8,
+            background: "linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            flexShrink: 0,
+          }}
+        >
+          <i className="ti ti-calendar-time" style={{ fontSize: 14, color: "#fff" }} aria-hidden="true" />
+        </div>
+        <div style={{ textAlign: "left" }}>
+          <p style={{ fontSize: 13, fontWeight: 700, color: "#1E1B4B", margin: 0, letterSpacing: "-0.01em" }}>
+            Repair Schedule
+          </p>
+          <p style={{ fontSize: 11, color: "#818CF8", margin: 0 }}>{formatWeekRange(weekStart, weekEnd)}</p>
+        </div>
+        {unscheduled.length > 0 && (
+          <span
             style={{
-              width: 32,
-              height: 32,
-              borderRadius: 9,
-              background: "linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flexShrink: 0,
+              fontSize: 11,
+              fontWeight: 600,
+              color: "#92400E",
+              background: "#FFFBEB",
+              border: "1px solid #FDE68A",
+              borderRadius: 999,
+              padding: "3px 9px",
+              marginLeft: 4,
             }}
           >
-            <i className="ti ti-calendar-time" style={{ fontSize: 16, color: "#fff" }} aria-hidden="true" />
-          </div>
-          <div>
-            <p style={{ fontSize: 14, fontWeight: 700, color: "#1E1B4B", margin: 0, letterSpacing: "-0.01em" }}>
-              Repair Schedule
-            </p>
-            <p style={{ fontSize: 12, color: "#818CF8", margin: 0 }}>{formatWeekRange(weekStart, weekEnd)}</p>
-          </div>
-        </div>
+            {unscheduled.length} unscheduled
+          </span>
+        )}
+      </button>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-          {unscheduled.length > 0 && (
-            <span
+      {/* ── Modal ── */}
+      {isOpen && (
+        <div
+          onClick={() => setIsOpen(false)}
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15, 23, 42, 0.45)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 1000,
+            padding: 24,
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              width: "min(1000px, 100%)",
+              maxHeight: "85vh",
+              background: "#FFFFFF",
+              borderRadius: 16,
+              boxShadow: "0 20px 60px rgba(15,23,42,0.35)",
+              display: "flex",
+              flexDirection: "column",
+              overflow: "hidden",
+            }}
+          >
+            {/* Header bar */}
+            <div
               style={{
-                fontSize: 11,
-                fontWeight: 600,
-                color: "#92400E",
-                background: "#FFFBEB",
-                border: "1px solid #FDE68A",
-                borderRadius: 999,
-                padding: "3px 9px",
-                marginRight: 6,
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                padding: "16px 20px",
+                borderBottom: "1px solid #F1F5F9",
+                flexShrink: 0,
               }}
             >
-              {unscheduled.length} unscheduled
-            </span>
-          )}
-          <button
-            onClick={() => setWeekStart((d) => addDays(d, -7))}
-            aria-label="Previous week"
-            style={navBtnStyle}
-          >
-            <i className="ti ti-chevron-left" style={{ fontSize: 15 }} aria-hidden="true" />
-          </button>
-          <button
-            onClick={() => setWeekStart(startOfWeek(new Date()))}
-            style={{ ...navBtnStyle, width: "auto", padding: "0 12px", fontSize: 12, fontWeight: 600 }}
-          >
-            Today
-          </button>
-          <button
-            onClick={() => setWeekStart((d) => addDays(d, 7))}
-            aria-label="Next week"
-            style={navBtnStyle}
-          >
-            <i className="ti ti-chevron-right" style={{ fontSize: 15 }} aria-hidden="true" />
-          </button>
-          <button
-            onClick={() => setCollapsed((c) => !c)}
-            aria-label={collapsed ? "Expand calendar" : "Collapse calendar"}
-            style={{ ...navBtnStyle, marginLeft: 4 }}
-          >
-            <i className={`ti ti-chevron-${collapsed ? "down" : "up"}`} style={{ fontSize: 15 }} aria-hidden="true" />
-          </button>
-        </div>
-      </div>
-
-      {/* ── Grid ── */}
-      {!collapsed && (
-        <div style={{ display: "flex", maxHeight: 360, overflowY: "auto", borderTop: "1px solid #F1F5F9" }}>
-          {/* Hour rail */}
-          <div style={{ width: 52, flexShrink: 0, paddingTop: 28 }}>
-            {hours.map((h) => (
-              <div
-                key={h}
-                style={{
-                  height: ROW_HEIGHT,
-                  fontSize: 10,
-                  color: "#94A3B8",
-                  textAlign: "right",
-                  paddingRight: 8,
-                  transform: "translateY(-6px)",
-                }}
-              >
-                {formatHour(h)}
-              </div>
-            ))}
-          </div>
-
-          {/* Day columns */}
-          <div style={{ flex: 1, display: "flex" }}>
-            {days.map((day, i) => {
-              const isToday = isSameDay(day, today);
-              const events = eventsByDay.get(i) ?? [];
-
-              return (
+              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <div
-                  key={i}
                   style={{
-                    flex: 1,
-                    borderLeft: "1px solid #F1F5F9",
-                    position: "relative",
-                    background: isToday ? "#FAFAFF" : "transparent",
+                    width: 32,
+                    height: 32,
+                    borderRadius: 9,
+                    background: "linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
                   }}
                 >
-                  <div
+                  <i className="ti ti-calendar-time" style={{ fontSize: 16, color: "#fff" }} aria-hidden="true" />
+                </div>
+                <div>
+                  <p style={{ fontSize: 14, fontWeight: 700, color: "#1E1B4B", margin: 0, letterSpacing: "-0.01em" }}>
+                    Repair Schedule
+                  </p>
+                  <p style={{ fontSize: 12, color: "#818CF8", margin: 0 }}>{formatWeekRange(weekStart, weekEnd)}</p>
+                </div>
+              </div>
+
+              <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                {unscheduled.length > 0 && (
+                  <span
                     style={{
-                      height: 28,
-                      display: "flex",
-                      flexDirection: "column",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      position: "sticky",
-                      top: 0,
-                      background: isToday ? "#FAFAFF" : "#fff",
-                      zIndex: 1,
+                      fontSize: 11,
+                      fontWeight: 600,
+                      color: "#92400E",
+                      background: "#FFFBEB",
+                      border: "1px solid #FDE68A",
+                      borderRadius: 999,
+                      padding: "3px 9px",
+                      marginRight: 6,
                     }}
                   >
-                    <span style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>
-                      {day.toLocaleDateString("en-US", { weekday: "short" })}
-                    </span>
-                    <span
+                    {unscheduled.length} unscheduled
+                  </span>
+                )}
+                <button onClick={() => setWeekStart((d) => addDays(d, -7))} aria-label="Previous week" style={navBtnStyle}>
+                  <i className="ti ti-chevron-left" style={{ fontSize: 15 }} aria-hidden="true" />
+                </button>
+                <button
+                  onClick={() => setWeekStart(startOfWeek(new Date()))}
+                  style={{ ...navBtnStyle, width: "auto", padding: "0 12px", fontSize: 12, fontWeight: 600 }}
+                >
+                  Today
+                </button>
+                <button onClick={() => setWeekStart((d) => addDays(d, 7))} aria-label="Next week" style={navBtnStyle}>
+                  <i className="ti ti-chevron-right" style={{ fontSize: 15 }} aria-hidden="true" />
+                </button>
+                <button
+                  onClick={() => setIsOpen(false)}
+                  aria-label="Close calendar"
+                  style={{ ...navBtnStyle, marginLeft: 4, background: "#F8FAFC" }}
+                >
+                  <i className="ti ti-x" style={{ fontSize: 15 }} aria-hidden="true" />
+                </button>
+              </div>
+            </div>
+
+            {/* Grid */}
+            <div style={{ display: "flex", overflowY: "auto", flex: 1 }}>
+              {/* Hour rail */}
+              <div style={{ width: 52, flexShrink: 0, paddingTop: 28 }}>
+                {hours.map((h) => (
+                  <div
+                    key={h}
+                    style={{
+                      height: ROW_HEIGHT,
+                      fontSize: 10,
+                      color: "#94A3B8",
+                      textAlign: "right",
+                      paddingRight: 8,
+                      transform: "translateY(-6px)",
+                    }}
+                  >
+                    {formatHour(h)}
+                  </div>
+                ))}
+              </div>
+
+              {/* Day columns */}
+              <div style={{ flex: 1, display: "flex" }}>
+                {days.map((day, i) => {
+                  const isToday = isSameDay(day, today);
+                  const events = eventsByDay.get(i) ?? [];
+
+                  return (
+                    <div
+                      key={i}
                       style={{
-                        fontSize: 12,
-                        fontWeight: isToday ? 700 : 500,
-                        color: isToday ? "#6366F1" : "#475569",
+                        flex: 1,
+                        borderLeft: "1px solid #F1F5F9",
+                        position: "relative",
+                        background: isToday ? "#FAFAFF" : "transparent",
                       }}
                     >
-                      {day.getDate()}
-                    </span>
-                  </div>
-
-                  <div style={{ position: "relative", height: hours.length * ROW_HEIGHT }}>
-                    {hours.map((h) => (
                       <div
-                        key={h}
-                        style={{ height: ROW_HEIGHT, borderTop: "1px solid #F8FAFC" }}
-                      />
-                    ))}
-
-                    {events.map((wo) => {
-                      const date = new Date(wo.scheduleDateRaw as string);
-                      const hourFloat = date.getHours() + date.getMinutes() / 60;
-                      const clamped = Math.min(Math.max(hourFloat, START_HOUR), END_HOUR);
-                      const top = (clamped - START_HOUR) * ROW_HEIGHT;
-                      const colors = PRIORITY_COLOR[wo.priority];
-                      const isSelected = wo.id === selectedId;
-                      const timeLabel = date.toLocaleTimeString("en-US", {
-                        hour: "numeric",
-                        minute: "2-digit",
-                      });
-
-                      return (
-                        <button
-                          key={wo.id}
-                          onClick={() => onSelect(wo)}
-                          title={`${wo.title} — ${timeLabel}`}
+                        style={{
+                          height: 28,
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          position: "sticky",
+                          top: 0,
+                          background: isToday ? "#FAFAFF" : "#fff",
+                          zIndex: 1,
+                        }}
+                      >
+                        <span style={{ fontSize: 10, color: "#94A3B8", fontWeight: 600, textTransform: "uppercase" }}>
+                          {day.toLocaleDateString("en-US", { weekday: "short" })}
+                        </span>
+                        <span
                           style={{
-                            position: "absolute",
-                            top,
-                            left: 3,
-                            right: 3,
-                            textAlign: "left",
-                            background: colors.bg,
-                            border: `1px solid ${isSelected ? "#6366F1" : colors.border}`,
-                            borderLeft: `3px solid ${colors.border}`,
-                            borderRadius: 6,
-                            padding: "3px 6px",
-                            cursor: "pointer",
-                            boxShadow: isSelected ? "0 0 0 2px rgba(99,102,241,0.25)" : "none",
-                            zIndex: isSelected ? 2 : 1,
+                            fontSize: 12,
+                            fontWeight: isToday ? 700 : 500,
+                            color: isToday ? "#6366F1" : "#475569",
                           }}
                         >
-                          <div style={{ fontSize: 9.5, fontWeight: 700, color: colors.text }}>{timeLabel}</div>
-                          <div
-                            style={{
-                              fontSize: 10.5,
-                              color: "#1E293B",
-                              fontWeight: 500,
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
-                            }}
-                          >
-                            {wo.asset}
-                          </div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              );
-            })}
+                          {day.getDate()}
+                        </span>
+                      </div>
+
+                      <div style={{ position: "relative", height: hours.length * ROW_HEIGHT }}>
+                        {hours.map((h) => (
+                          <div key={h} style={{ height: ROW_HEIGHT, borderTop: "1px solid #F8FAFC" }} />
+                        ))}
+
+                        {events.map((wo) => {
+                          const date = new Date(wo.scheduleDateRaw as string);
+                          const hourFloat = date.getHours() + date.getMinutes() / 60;
+                          const clamped = Math.min(Math.max(hourFloat, START_HOUR), END_HOUR);
+                          const top = (clamped - START_HOUR) * ROW_HEIGHT;
+                          const colors = PRIORITY_COLOR[wo.priority];
+                          const isSelected = wo.id === selectedId;
+                          const timeLabel = date.toLocaleTimeString("en-US", {
+                            hour: "numeric",
+                            minute: "2-digit",
+                          });
+
+                          return (
+                            <button
+                              key={wo.id}
+                              onClick={() => handleSelect(wo)}
+                              title={`${wo.title} — ${timeLabel}`}
+                              style={{
+                                position: "absolute",
+                                top,
+                                left: 3,
+                                right: 3,
+                                textAlign: "left",
+                                background: colors.bg,
+                                border: `1px solid ${isSelected ? "#6366F1" : colors.border}`,
+                                borderLeft: `3px solid ${colors.border}`,
+                                borderRadius: 6,
+                                padding: "3px 6px",
+                                cursor: "pointer",
+                                boxShadow: isSelected ? "0 0 0 2px rgba(99,102,241,0.25)" : "none",
+                                zIndex: isSelected ? 2 : 1,
+                              }}
+                            >
+                              <div style={{ fontSize: 9.5, fontWeight: 700, color: colors.text }}>{timeLabel}</div>
+                              <div
+                                style={{
+                                  fontSize: 10.5,
+                                  color: "#1E293B",
+                                  fontWeight: 500,
+                                  overflow: "hidden",
+                                  textOverflow: "ellipsis",
+                                  whiteSpace: "nowrap",
+                                }}
+                              >
+                                {wo.asset}
+                              </div>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
