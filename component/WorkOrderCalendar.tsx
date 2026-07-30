@@ -105,59 +105,63 @@ export function WorkOrderCalendar({ workOrders, selectedId, onSelect }: WorkOrde
 
   return (
     <>
-      {/* ── Trigger button ── */}
-      <button
-        onClick={() => setIsOpen(true)}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 10,
-          padding: "8px 14px",
-          margin: "12px 20px",
-          background: "#FFFFFF",
-          border: "1px solid #E5E7EB",
-          borderRadius: 12,
-          cursor: "pointer",
-          boxShadow: "0 1px 2px rgba(16,24,40,0.05)",
-        }}
-      >
-        <div
+      {/* ── Trigger button (compact, fixed size, won't stretch) ── */}
+      <div style={{ position: "relative", flexShrink: 0, alignSelf: "flex-start" }}>
+        <button
+          onClick={() => setIsOpen(true)}
+          title="Repair Schedule"
           style={{
-            width: 28,
-            height: 28,
-            borderRadius: 8,
-            background: "linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)",
+            width: 36,
+            height: 36,
+            borderRadius: 10,
+            border: "1px solid #E5E7EB",
+            background: "#fff",
+            cursor: "pointer",
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
+            boxShadow: "0 1px 2px rgba(16,24,40,0.05)",
             flexShrink: 0,
           }}
         >
-          <i className="ti ti-calendar-time" style={{ fontSize: 14, color: "#fff" }} aria-hidden="true" />
-        </div>
-        <div style={{ textAlign: "left" }}>
-          <p style={{ fontSize: 13, fontWeight: 700, color: "#1E1B4B", margin: 0, letterSpacing: "-0.01em" }}>
-            Repair Schedule
-          </p>
-          <p style={{ fontSize: 11, color: "#818CF8", margin: 0 }}>{formatWeekRange(weekStart, weekEnd)}</p>
-        </div>
+          <div
+            style={{
+              width: 22,
+              height: 22,
+              borderRadius: 6,
+              background: "linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <i className="ti ti-calendar-time" style={{ fontSize: 12, color: "#fff" }} aria-hidden="true" />
+          </div>
+        </button>
         {unscheduled.length > 0 && (
           <span
             style={{
-              fontSize: 11,
-              fontWeight: 600,
-              color: "#92400E",
-              background: "#FFFBEB",
-              border: "1px solid #FDE68A",
+              position: "absolute",
+              top: -6,
+              right: -6,
+              minWidth: 16,
+              height: 16,
+              padding: "0 4px",
               borderRadius: 999,
-              padding: "3px 9px",
-              marginLeft: 4,
+              background: "#F59E0B",
+              color: "#fff",
+              fontSize: 10,
+              fontWeight: 700,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              border: "2px solid #fff",
             }}
           >
-            {unscheduled.length} unscheduled
+            {unscheduled.length}
           </span>
         )}
-      </button>
+      </div>
 
       {/* ── Modal ── */}
       {isOpen && (

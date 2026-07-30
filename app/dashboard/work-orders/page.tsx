@@ -16,6 +16,7 @@ import {
 import { useUpdateMaintenanceStatusMutation } from "@/redux/Maintenance/Maintenanceapi";
 import { NewWorkOrderModal } from "@/component/NewWorkOrderModal";
 import { useGetAllEquipmentQuery } from "@/redux/Equipment/Equipmentapi";
+import { WorkOrderCalendar } from "@/component/WorkOrderCalendar";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -62,30 +63,42 @@ function stripHtml(html: string | null | undefined): string {
 
 export function woStatusToRepairState(status: WOStatus): RepairState {
   switch (status) {
-    case "in_progress": return "under_repair";
-    case "done":        return "done";
-    case "on_hold":     return "cancel";
+    case "in_progress":
+      return "under_repair";
+    case "done":
+      return "done";
+    case "on_hold":
+      return "cancel";
     case "open":
-    default:            return "new";
+    default:
+      return "new";
   }
 }
 
 function mapState(state: RepairState): WOStatus {
   switch (state) {
-    case "under_repair": return "in_progress";
-    case "done":         return "done";
-    case "cancel":       return "on_hold";
+    case "under_repair":
+      return "in_progress";
+    case "done":
+      return "done";
+    case "cancel":
+      return "on_hold";
     case "new":
-    default:             return "open";
+    default:
+      return "open";
   }
 }
 
 function mapPriority(p?: string | null): WOPriority {
   switch ((p ?? "").toLowerCase()) {
-    case "high":   return "high";
-    case "medium": return "medium";
-    case "low":    return "low";
-    default:       return "low";
+    case "high":
+      return "high";
+    case "medium":
+      return "medium";
+    case "low":
+      return "low";
+    default:
+      return "low";
   }
 }
 
@@ -109,9 +122,7 @@ function toWorkOrder(r: MaintenanceRequest, index: number): WorkOrder {
 
   const locationRaw = r.equipment?.location;
   const location =
-    typeof locationRaw === "string"
-      ? locationRaw
-      : locationRaw?.name ?? "—";
+    typeof locationRaw === "string" ? locationRaw : (locationRaw?.name ?? "—");
 
   return {
     id: `#${r.id}`,
@@ -120,7 +131,7 @@ function toWorkOrder(r: MaintenanceRequest, index: number): WorkOrder {
     requestedBy: r.createdBy?.name ?? "Unknown",
     status,
     priority: mapPriority(r.priority),
-   restaurant: r.equipment?.restaurant ?? "—",
+    restaurant: r.equipment?.restaurant ?? "—",
     scheduleEnd: formatDate(r.scheduleEnd),
     createDate: formatDate(r.createDate),
     duration: r.duration,
@@ -144,7 +155,7 @@ function toWorkOrder(r: MaintenanceRequest, index: number): WorkOrder {
       color: avatarColor(index + i),
     })),
     media: r.media ?? [],
-     scheduleDateRaw: r.scheduleDate,
+    scheduleDateRaw: r.scheduleDate,
     checklist: [],
   };
 }
@@ -155,31 +166,34 @@ export default function WorkOrdersPage() {
   const { data, isLoading, isError, refetch } =
     useGetAllMaintenanceRequestsQuery();
   const [updateStatus] = useUpdateMaintenanceStatusMutation();
-const [createWorkOrder, { isLoading: creating }] = useCreateMaintenanceRequestMutation();
+  const [createWorkOrder, { isLoading: creating }] =
+    useCreateMaintenanceRequestMutation();
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [statusOverrides, setStatusOverrides] = useState<Record<string, WOStatus>>({});
+  const [statusOverrides, setStatusOverrides] = useState<
+    Record<string, WOStatus>
+  >({});
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-const { data: technicians = [] } = useGetTechniciansQuery();
+  const { data: technicians = [] } = useGetTechniciansQuery();
   const baseWorkOrders: WorkOrder[] = useMemo(
     () => (data?.data?.requests ?? []).map((r, i) => toWorkOrder(r, i)),
-    [data]
+    [data],
   );
-const [newOrderOpen, setNewOrderOpen] = useState(false);
+  const [newOrderOpen, setNewOrderOpen] = useState(false);
   const handleNew = useCallback(() => setNewOrderOpen(true), []);
-const { data: equipmentData } = useGetAllEquipmentQuery();
+  const { data: equipmentData } = useGetAllEquipmentQuery();
 
-const equipmentOptions = useMemo(
-  () =>
-    (equipmentData?.data ?? [])
-      .filter((e) => e.active !== false) 
-      .map((e) => ({
-        id: e.id,
-        name: e.name,
-        assetCode: e.assetCode,
-        restaurant: e.restaurant,
-      })),
-  [equipmentData]
-);
+  const equipmentOptions = useMemo(
+    () =>
+      (equipmentData?.data ?? [])
+        .filter((e) => e.active !== false)
+        .map((e) => ({
+          id: e.id,
+          name: e.name,
+          assetCode: e.assetCode,
+          restaurant: e.restaurant,
+        })),
+    [equipmentData],
+  );
   const handleCreateWorkOrder = async (formData: FormData) => {
     await createWorkOrder(formData).unwrap();
     refetch();
@@ -187,9 +201,9 @@ const equipmentOptions = useMemo(
   const workOrders: WorkOrder[] = useMemo(
     () =>
       baseWorkOrders.map((wo) =>
-        statusOverrides[wo.id] ? { ...wo, status: statusOverrides[wo.id] } : wo
+        statusOverrides[wo.id] ? { ...wo, status: statusOverrides[wo.id] } : wo,
       ),
-    [baseWorkOrders, statusOverrides]
+    [baseWorkOrders, statusOverrides],
   );
 
   const effectiveId = selectedId ?? workOrders[0]?.id ?? null;
@@ -216,11 +230,13 @@ const equipmentOptions = useMemo(
         setUpdatingId(null);
       }
     },
-    [updateStatus]
+    [updateStatus],
   );
 
-  const handleChecklistToggle = useCallback((_id: string, _index: number) => {}, []);
-  
+  const handleChecklistToggle = useCallback(
+    (_id: string, _index: number) => {},
+    [],
+  );
 
   // ── Loading state ──
   if (isLoading) {
@@ -232,7 +248,8 @@ const equipmentOptions = useMemo(
           height: "100vh",
           alignItems: "center",
           justifyContent: "center",
-          background: "linear-gradient(135deg, #F5F3FF 0%, #EEF2FF 50%, #F0F9FF 100%)",
+          background:
+            "linear-gradient(135deg, #F5F3FF 0%, #EEF2FF 50%, #F0F9FF 100%)",
           gap: 16,
         }}
       >
@@ -345,7 +362,11 @@ const equipmentOptions = useMemo(
             gap: 6,
           }}
         >
-          <i className="ti ti-refresh" style={{ fontSize: 13 }} aria-hidden="true" />
+          <i
+            className="ti ti-refresh"
+            style={{ fontSize: 13 }}
+            aria-hidden="true"
+          />
           Try again
         </button>
       </div>
@@ -363,29 +384,46 @@ const equipmentOptions = useMemo(
       }}
     >
       <WorkOrderSidebar />
-      <main style={{ flex: 1, display: "flex", overflow: "hidden" }}>
-        <WOListPanel
-          workOrders={workOrders}
-          selectedId={effectiveId}
-          onSelect={handleSelect}
-          onNew={handleNew}
-        />
-        <NewWorkOrderModal
-    open={newOrderOpen}
-    onClose={() => setNewOrderOpen(false)}
-    onSubmit={handleCreateWorkOrder}
-    equipmentOptions={equipmentOptions}
-    technicianOptions={technicians}
-    isSubmitting={creating}
-  />
-        {selectedWO && (
-          <WODetailPanel
-            wo={selectedWO}
-            onStatusChange={handleStatusChange}
-            onChecklistToggle={handleChecklistToggle}
-            updatingId={updatingId}
+  <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            padding: "10px 20px 0",
+            flexShrink: 0,
+          }}
+        >
+          <WorkOrderCalendar
+            workOrders={workOrders}
+            selectedId={effectiveId}
+            onSelect={(wo) => setSelectedId(wo.id)}
           />
-        )}
+        </div>
+
+        <div style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+          <WOListPanel
+            workOrders={workOrders}
+            selectedId={effectiveId}
+            onSelect={handleSelect}
+            onNew={handleNew}
+          />
+          <NewWorkOrderModal
+            open={newOrderOpen}
+            onClose={() => setNewOrderOpen(false)}
+            onSubmit={handleCreateWorkOrder}
+            equipmentOptions={equipmentOptions}
+            technicianOptions={technicians}
+            isSubmitting={creating}
+          />
+          {selectedWO && (
+            <WODetailPanel
+              wo={selectedWO}
+              onStatusChange={handleStatusChange}
+              onChecklistToggle={handleChecklistToggle}
+              updatingId={updatingId}
+            />
+          )}
+        </div>
       </main>
     </div>
   );
