@@ -69,7 +69,7 @@ export const reportingApi = apiSlice.injectEndpoints({
     // One round trip for the whole dashboard — used by the Reporting page.
     getReportingSummary: builder.query<ReportingSummary, ReportingFilters | void>({
       query: (filters) => ({
-        url: `reporting/summary${buildQuery(filters ?? {})}`,
+        url: `summary${buildQuery(filters ?? {})}`,
         method: "GET",
         credentials: "include" as const,
       }),
@@ -78,7 +78,7 @@ export const reportingApi = apiSlice.injectEndpoints({
 
     getCreatedVsCompleted: builder.query<CreatedVsCompletedReport, ReportingFilters | void>({
       query: (filters) => ({
-        url: `reporting/created-vs-completed${buildQuery(filters ?? {})}`,
+        url: `created-vs-completed${buildQuery(filters ?? {})}`,
         method: "GET",
         credentials: "include" as const,
       }),
@@ -87,7 +87,7 @@ export const reportingApi = apiSlice.injectEndpoints({
 
     getReactiveVsRepeatable: builder.query<ReactiveVsRepeatableReport, ReportingFilters | void>({
       query: (filters) => ({
-        url: `reporting/reactive-vs-repeatable${buildQuery(filters ?? {})}`,
+        url: `reactive-vs-repeatable${buildQuery(filters ?? {})}`,
         method: "GET",
         credentials: "include" as const,
       }),
@@ -96,7 +96,7 @@ export const reportingApi = apiSlice.injectEndpoints({
 
     getStatusBreakdown: builder.query<StatusBreakdownReport, ReportingFilters | void>({
       query: (filters) => ({
-        url: `reporting/status-breakdown${buildQuery(filters ?? {})}`,
+        url: `status-breakdown${buildQuery(filters ?? {})}`,
         method: "GET",
         credentials: "include" as const,
       }),
@@ -105,7 +105,7 @@ export const reportingApi = apiSlice.injectEndpoints({
 
     getPriorityBreakdown: builder.query<PriorityBreakdownRow[], ReportingFilters | void>({
       query: (filters) => ({
-        url: `reporting/priority-breakdown${buildQuery(filters ?? {})}`,
+        url: `priority-breakdown${buildQuery(filters ?? {})}`,
         method: "GET",
         credentials: "include" as const,
       }),
