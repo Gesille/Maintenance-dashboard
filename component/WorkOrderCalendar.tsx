@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CalendarClock, ChevronLeft, ChevronRight, X, Clock } from "lucide-react";
+import { CalendarClock, ChevronLeft, ChevronRight, X, Clock, CheckCircle2 } from "lucide-react";
 import { WorkOrder, WOPriority } from "@/types/types";
 
 // ─── Config ─────────────────────────────────────────────────────────────────
@@ -16,6 +16,8 @@ const PRIORITY_COLOR: Record<WOPriority, { bg: string; border: string; text: str
   medium: { bg: "#FFFBEB", border: "#F59E0B", text: "#92400E" },
   low: { bg: "#F0FDF4", border: "#22C55E", text: "#166534" },
 };
+
+const DONE_COLOR = { bg: "#F0FDF4", border: "#16A34A", text: "#166534" };
 
 // ─── Date helpers ───────────────────────────────────────────────────────────
 
@@ -69,14 +71,25 @@ interface WorkOrderCalendarProps {
   workOrders: WorkOrder[];
   selectedId: string | null;
   onSelect: (wo: WorkOrder) => void;
-  onSchedule?: (id: string, isoDate: string) => void; // NEW
-  lastRepairByAsset?: Record<string, string>; // NEW — assetCode/asset → ISO date
+  onSchedule?: (id: string, isoDate: string) => void;
+  lastRepairByAsset?: Record<string, string>;
 }
 
-type ScheduledWO = WorkOrder & { scheduleDateRaw?: string | null };
+type ScheduledWO = WorkOrder & {
+  scheduleDateRaw?: string | null;
+  signatureUrl?: string | null;
+  checklistResult?: "pass" | "flag" | "fail" | null;
+};
 
 interface PendingSlot {
-  date: Date; // exact clicked date + time (rounded to nearest 30 min)
+  date: Date;
+}
+
+interface SignaturePreview {
+  url: string;
+  title: string;
+  x: number;
+  y: number;
 }
 
 export function WorkOrderCalendar({
@@ -90,6 +103,7 @@ export function WorkOrderCalendar({
   const [isOpen, setIsOpen] = useState(false);
   const [pendingSlot, setPendingSlot] = useState<PendingSlot | null>(null);
   const [pickedWOId, setPickedWOId] = useState<string>("");
+  const [signaturePreview, setSignaturePreview] = useState<SignaturePreview | null>(null);
 
   const days = useMemo(
     () => Array.from({ length: DAY_COUNT }, (_, i) => addDays(weekStart, i)),
@@ -121,13 +135,11 @@ export function WorkOrderCalendar({
     setIsOpen(false);
   };
 
-  // ── Click empty grid area → open "schedule a work order here" dialog ──
   const handleSlotClick = (e: React.MouseEvent<HTMLDivElement>, day: Date) => {
     const rect = e.currentTarget.getBoundingClientRect();
     const offsetY = e.clientY - rect.top;
     let hourFloat = START_HOUR + offsetY / ROW_HEIGHT;
     hourFloat = Math.min(Math.max(hourFloat, START_HOUR), END_HOUR);
-    // round to nearest 30 min
     hourFloat = Math.round(hourFloat * 2) / 2;
 
     const date = new Date(day);
@@ -263,7 +275,7 @@ export function WorkOrderCalendar({
                     Repair Schedule
                   </p>
                   <p style={{ fontSize: 12, color: "#818CF8", margin: 0 }}>
-                    {formatWeekRange(weekStart, weekEnd)} · click an empty slot to schedule
+                    {formatWeekRange(weekStart, weekEnd)} · click an empty slot to schedule · hover a completed job for signature
                   </p>
                 </div>
               </div>
@@ -369,7 +381,6 @@ export function WorkOrderCalendar({
                         </span>
                       </div>
 
-                      {/* Clickable empty area — click anywhere here to schedule */}
                       <div
                         style={{ position: "relative", height: hours.length * ROW_HEIGHT, cursor: onSchedule ? "pointer" : "default" }}
                         onClick={onSchedule ? (e) => handleSlotClick(e, day) : undefined}
@@ -383,21 +394,34 @@ export function WorkOrderCalendar({
                           const hourFloat = date.getHours() + date.getMinutes() / 60;
                           const clamped = Math.min(Math.max(hourFloat, START_HOUR), END_HOUR);
                           const top = (clamped - START_HOUR) * ROW_HEIGHT;
-                          const colors = PRIORITY_COLOR[wo.priority];
+                          const isDone = wo.status === "done";
+                          const colors = isDone ? DONE_COLOR : PRIORITY_COLOR[wo.priority];
                           const isSelected = wo.id === selectedId;
                           const timeLabel = date.toLocaleTimeString("en-US", {
                             hour: "numeric",
                             minute: "2-digit",
                           });
+                          const hasSignature = isDone && !!wo.signatureUrl;
 
                           return (
                             <button
                               key={wo.id}
                               onClick={(e) => {
-                                e.stopPropagation(); // don't also trigger the slot-click handler
+                                e.stopPropagation();
                                 handleSelect(wo);
                               }}
-                              title={`${wo.title} — ${timeLabel}`}
+                              onMouseEnter={(e) => {
+                                if (!hasSignature) return;
+                                const rect = e.currentTarget.getBoundingClientRect();
+                                setSignaturePreview({
+                                  url: wo.signatureUrl as string,
+                                  title: wo.title,
+                                  x: rect.right + 8,
+                                  y: rect.top,
+                                });
+                              }}
+                              onMouseLeave={() => setSignaturePreview(null)}
+                              title={`${wo.title} — ${timeLabel}${isDone ? " · Completed" : ""}`}
                               style={{
                                 position: "absolute",
                                 top,
@@ -412,9 +436,13 @@ export function WorkOrderCalendar({
                                 cursor: "pointer",
                                 boxShadow: isSelected ? "0 0 0 2px rgba(99,102,241,0.25)" : "none",
                                 zIndex: isSelected ? 2 : 1,
+                                opacity: isDone ? 0.85 : 1,
                               }}
                             >
-                              <div style={{ fontSize: 9.5, fontWeight: 700, color: colors.text }}>{timeLabel}</div>
+                              <div style={{ display: "flex", alignItems: "center", gap: 4 }}>
+                                {isDone && <CheckCircle2 size={10} color={colors.border} strokeWidth={2.5} />}
+                                <span style={{ fontSize: 9.5, fontWeight: 700, color: colors.text }}>{timeLabel}</span>
+                              </div>
                               <div
                                 style={{
                                   fontSize: 10.5,
@@ -440,7 +468,41 @@ export function WorkOrderCalendar({
         </div>
       )}
 
-      {/* ── Schedule dialog (Outlook-style "new event" popup) ── */}
+      {/* ── Signature hover preview ── */}
+      {signaturePreview && (
+        <div
+          style={{
+            position: "fixed",
+            top: signaturePreview.y,
+            left: signaturePreview.x,
+            zIndex: 1200,
+            background: "#fff",
+            borderRadius: 10,
+            boxShadow: "0 12px 32px rgba(15,23,42,0.25)",
+            border: "1px solid #E5E7EB",
+            padding: 10,
+            width: 200,
+            pointerEvents: "none",
+          }}
+        >
+          <p style={{ fontSize: 10, fontWeight: 700, color: "#166534", margin: "0 0 6px", display: "flex", alignItems: "center", gap: 4 }}>
+            <CheckCircle2 size={11} /> Technician signature
+          </p>
+          <img
+            src={signaturePreview.url}
+            alt={`Signature for ${signaturePreview.title}`}
+            style={{
+              width: "100%",
+              height: "auto",
+              background: "#F8FAFC",
+              border: "1px solid #F1F5F9",
+              borderRadius: 6,
+            }}
+          />
+        </div>
+      )}
+
+      {/* ── Schedule dialog (unchanged) ── */}
       {pendingSlot && (
         <div
           onClick={() => setPendingSlot(null)}

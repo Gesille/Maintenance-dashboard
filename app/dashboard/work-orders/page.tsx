@@ -158,7 +158,9 @@ function toWorkOrder(r: MaintenanceRequest, index: number): WorkOrder {
     })),
     media: r.media ?? [],
     scheduleDateRaw: r.scheduleDate,
-    checklist: [],
+    checklist: r.checklist?.items ?? [],
+    checklistResult: r.checklist?.result ?? null,    
+    signatureUrl: r.checklist?.signatureUrl ?? null, 
   };
 }
 

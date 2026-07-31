@@ -11,7 +11,19 @@ export interface StageInfo {
   sequence: number;
   isfold: boolean;
 }
+export interface ChecklistItem {
+  label: string;
+  done: boolean;
+}
 
+export type ChecklistResult = "pass" | "flag" | "fail";
+
+export interface MaintenanceChecklist {
+  items: ChecklistItem[];
+  result: ChecklistResult | null;
+  signatureUrl: string | null;
+  completedAt: string | null;
+}
 export interface MaintenanceRequest {
   id: number;
   name: string;
@@ -21,6 +33,7 @@ export interface MaintenanceRequest {
   maintenanceType: string;
   stage: StageInfo;
   media: { url: string; type: "image" | "video" }[];
+  checklist?: MaintenanceChecklist;
   equipment: {
     id: number;
     name: string;

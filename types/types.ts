@@ -50,4 +50,6 @@ scheduleDateRaw?: string | null;
   description: string;
   assignees: Assignee[];
   checklist: ChecklistItem[];
+  checklistResult?: "pass" | "flag" | "fail" | null;
+  signatureUrl?: string | null;
 }
