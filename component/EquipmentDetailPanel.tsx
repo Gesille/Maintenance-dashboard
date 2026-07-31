@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import { Edit3, Trash2, X, Save, Loader, MapPin, Tag, Wrench } from "lucide-react";
 import { Equipment, EquipmentFormInput, EMPTY_EQUIPMENT_FORM } from "@/types/equipment";
 import { CATEGORY_COLORS } from "@/types/tokens";
+import { useGetAllCategoriesQuery } from "@/redux/Category/Categoryapi";
 
 type Mode = "view" | "edit" | "create";
 
@@ -86,6 +87,11 @@ export function EquipmentDetailPanel({
 }: Props) {
   const [form, setForm] = useState<EquipmentFormInput>(toFormInput(equipment));
   const [confirmingDelete, setConfirmingDelete] = useState(false);
+
+  // Pulls live from the Categories collection, so the dropdown always reflects
+  // whatever exists — including anything just created on the Categories page.
+  const { data: categoriesData } = useGetAllCategoriesQuery();
+  const categories = categoriesData?.data ?? [];
 
   useEffect(() => {
     setForm(toFormInput(equipment));
@@ -292,6 +298,7 @@ export function EquipmentDetailPanel({
                       {f.label}
                       {f.key === "name" && <span style={{ color: "#DC2626" }}> *</span>}
                     </label>
+
                     {f.key === "description" ? (
                       <textarea
                         value={(form[f.key] as string) ?? ""}
@@ -299,6 +306,43 @@ export function EquipmentDetailPanel({
                         rows={3}
                         style={inputStyle()}
                       />
+                    ) : f.key === "category" ? (
+                      <>
+                        <select
+                          value={(form.category as string) ?? ""}
+                          onChange={(e) => handleField("category", e.target.value)}
+                          style={{ ...inputStyle(), cursor: "pointer" }}
+                        >
+                          <option value="">Select category…</option>
+                          {categories.map((c) => (
+                            <option key={c.id} value={c.name}>
+                              {c.name}
+                            </option>
+                          ))}
+                          {/* Keeps whatever was already saved selectable even if it
+                              doesn't match a current active category name. */}
+                          {form.category && !categories.some((c) => c.name === form.category) && (
+                            <option value={form.category as string}>
+                              {form.category} (not in list)
+                            </option>
+                          )}
+                        </select>
+                        <a
+                          href="/dashboard/categories"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            fontSize: 11,
+                            color: accentColor,
+                            fontWeight: 600,
+                            textDecoration: "none",
+                            marginTop: 5,
+                            display: "inline-block",
+                          }}
+                        >
+                          Don&apos;t see it? Create a new category →
+                        </a>
+                      </>
                     ) : (
                       <input
                         type={f.type ?? "text"}
@@ -326,7 +370,8 @@ export function EquipmentDetailPanel({
                   boxShadow: "0 1px 4px rgba(99,102,241,0.06)",
                 }}
               >
-                <EquipRow icon={<MapPin size={13} color="#A5B4FC" />} label="Location" value={equipment.usedInLocation} />
+                <EquipRow icon={<Tag size={13} color="#A5B4FC" />} label="Category" value={equipment.category} />
+                <EquipRow icon={<MapPin size={13} color="#A5B4FC" />} label="Location" value={equipment.usedInLocation} divider />
                 <EquipRow icon={<Tag size={13} color="#A5B4FC" />} label="Restaurant" value={equipment.restaurant} divider />
                 <EquipRow icon={<Wrench size={13} color="#A5B4FC" />} label="Team" value={equipment.maintenanceTeam} divider />
                 <EquipRow icon={<i className="ti ti-user" style={{ fontSize: 13, color: "#A5B4FC" }} />} label="Technician" value={equipment.technician} divider />
@@ -336,75 +381,72 @@ export function EquipmentDetailPanel({
                 <EquipRow icon={<i className="ti ti-hash" style={{ fontSize: 13, color: "#A5B4FC" }} />} label="Serial no." value={equipment.serialNumber} divider />
                 <EquipRow icon={<i className="ti ti-building-store" style={{ fontSize: 13, color: "#A5B4FC" }} />} label="Vendor" value={equipment.vendor} divider />
                 <EquipRow icon={<i className="ti ti-currency-dollar" style={{ fontSize: 13, color: "#A5B4FC" }} />} label="Cost" value={equipment.cost ? `$${equipment.cost}` : null} divider />
-<EquipRow icon={<i className="ti ti-calendar-event" style={{ fontSize: 13, color: "#A5B4FC" }} />} label="Assigned date" value={equipment.assignedDate} divider />
-<EquipRow icon={<i className="ti ti-calendar-check" style={{ fontSize: 13, color: "#A5B4FC" }} />} label="Effective date" value={equipment.effectiveDate} divider />
-<EquipRow icon={<i className="ti ti-shield-check" style={{ fontSize: 13, color: "#A5B4FC" }} />} label="Warranty exp." value={equipment.warrantyExpirationDate} divider />
-<EquipRow icon={<i className="ti ti-calendar-x" style={{ fontSize: 13, color: "#A5B4FC" }} />} label="Scrap date" value={equipment.scrapDate} divider />
-</div>
+                <EquipRow icon={<i className="ti ti-calendar-event" style={{ fontSize: 13, color: "#A5B4FC" }} />} label="Assigned date" value={equipment.assignedDate} divider />
+                <EquipRow icon={<i className="ti ti-calendar-check" style={{ fontSize: 13, color: "#A5B4FC" }} />} label="Effective date" value={equipment.effectiveDate} divider />
+                <EquipRow icon={<i className="ti ti-shield-check" style={{ fontSize: 13, color: "#A5B4FC" }} />} label="Warranty exp." value={equipment.warrantyExpirationDate} divider />
+                <EquipRow icon={<i className="ti ti-calendar-x" style={{ fontSize: 13, color: "#A5B4FC" }} />} label="Scrap date" value={equipment.scrapDate} divider />
+              </div>
 
-<SectionLabel label="QR code" />
-<div
-  style={{
-    background: "#fff",
-    border: "1px solid #E8EAFF",
-    borderRadius: 14,
-    padding: "16px 20px",
-    marginBottom: 24,
-    display: "flex",
-    alignItems: "center",
-    gap: 16,
-    boxShadow: "0 1px 4px rgba(99,102,241,0.05)",
-  }}
->
-  <div
-    style={{
-      width: 88,
-      height: 88,
-      borderRadius: 10,
-      background: equipment.qrCodeUrl ? "#fff" : "#F8FAFF",
-      border: "1px solid #E8EAFF",
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      flexShrink: 0,
-      overflow: "hidden",
-    }}
-  >
-    {equipment.qrCodeUrl ? (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img
-        src={equipment.qrCodeUrl}
-        alt={`QR for ${equipment.name}`}
-        style={{ width: "100%", height: "100%", objectFit: "contain" }}
-      />
-    ) : (
-      <span style={{ fontSize: 10, color: "#CBD5E1" }}>No QR</span>
-    )}
-  </div>
-  <div style={{ flex: 1, minWidth: 0 }}>
-    <p style={{ fontSize: 12, color: "#64748B", margin: "0 0 8px" }}>
-      {equipment.qrCodeUrl
-        ? "Scan this code to open the damage report form for this equipment."
-        : "No QR code generated yet for this equipment."}
-    </p>
-    <a
-      href="/dashboard/qr-code"
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-        fontSize: 12,
-        fontWeight: 600,
-        color: accentColor,
-        textDecoration: "none",
-      }}
-    >
-      {equipment.qrCodeUrl ? "Manage QR codes →" : "Generate QR code →"}
-    </a>
-  </div>
-
-
-<SectionLabel label="Description" />
+              <SectionLabel label="QR code" />
+              <div
+                style={{
+                  background: "#fff",
+                  border: "1px solid #E8EAFF",
+                  borderRadius: 14,
+                  padding: "16px 20px",
+                  marginBottom: 24,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 16,
+                  boxShadow: "0 1px 4px rgba(99,102,241,0.05)",
+                }}
+              >
+                <div
+                  style={{
+                    width: 88,
+                    height: 88,
+                    borderRadius: 10,
+                    background: equipment.qrCodeUrl ? "#fff" : "#F8FAFF",
+                    border: "1px solid #E8EAFF",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    flexShrink: 0,
+                    overflow: "hidden",
+                  }}
+                >
+                  {equipment.qrCodeUrl ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={equipment.qrCodeUrl}
+                      alt={`QR for ${equipment.name}`}
+                      style={{ width: "100%", height: "100%", objectFit: "contain" }}
+                    />
+                  ) : (
+                    <span style={{ fontSize: 10, color: "#CBD5E1" }}>No QR</span>
+                  )}
+                </div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <p style={{ fontSize: 12, color: "#64748B", margin: "0 0 8px" }}>
+                    {equipment.qrCodeUrl
+                      ? "Scan this code to open the damage report form for this equipment."
+                      : "No QR code generated yet for this equipment."}
+                  </p>
+                  <a
+                    href="/dashboard/qr-code"
+                    style={{
+                      display: "inline-flex",
+                      alignItems: "center",
+                      gap: 6,
+                      fontSize: 12,
+                      fontWeight: 600,
+                      color: accentColor,
+                      textDecoration: "none",
+                    }}
+                  >
+                    {equipment.qrCodeUrl ? "Manage QR codes →" : "Generate QR code →"}
+                  </a>
+                </div>
               </div>
 
               <SectionLabel label="Description" />
