@@ -4,7 +4,9 @@ import { userLoggedIn } from "../auth/authSlice";
 
 export const apiSlice = createApi({
   reducerPath: "api",
-  tagTypes: ["MaintenanceRequests","Equipment","Users","SupportTickets"], 
+  tagTypes: ["MaintenanceRequests","Equipment","Users","SupportTickets","LIST","LOW_STOCK","Part",
+    "PartStockMovement"
+  ], 
   baseQuery: fetchBaseQuery({
     baseUrl: process.env.NEXT_PUBLIC_SERVER_URL,
     
