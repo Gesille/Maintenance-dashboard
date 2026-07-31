@@ -83,7 +83,15 @@ export function CategoriesPage() {
   };
 
   return (
-    <div style={{ display: "flex", height: "100%", background: "#fff" }}>
+   <div
+  style={{
+    display: "flex",
+    width: "100%",
+    height: "100%",
+    flex: 1,
+    background: "#fff",
+  }}
+>
       {/* ── List panel ── */}
       <div
         style={{
@@ -210,16 +218,28 @@ export function CategoriesPage() {
       </div>
 
       {/* ── Detail panel ── */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#FAFBFF" , minWidth: 0,}}>
+     <div
+  style={{
+    flex: 1,
+    display: "flex",
+    flexDirection: "column",
+    width: "100%",
+    minWidth: 0,
+    alignItems: "stretch",
+    background: "#FAFBFF",
+  }}
+>
         {!selected ? (
           <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#94A3B8", fontSize: 13 }}>
             Select a category to view its details
           </div>
         ) : (
-          <div
+<div
   style={{
-    flex: 1,
+    display: "flex",
+    flexDirection: "column",
     width: "100%",
+    flex: 1,
     padding: "24px 32px",
     boxSizing: "border-box",
   }}
