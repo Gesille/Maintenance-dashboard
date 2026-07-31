@@ -7,7 +7,7 @@ const page = () => {
    return (
      <div style={{ height: "100vh", overflow: "hidden", background: "#F8FAFF" }}>
        <WorkOrderSidebar />
-    
+    {/*  */}
          <CategoriesPage />
        
        
