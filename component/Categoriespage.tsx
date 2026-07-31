@@ -216,7 +216,14 @@ export function CategoriesPage() {
             Select a category to view its details
           </div>
         ) : (
-          <div style={{ padding: "24px 32px" }}>
+          <div
+  style={{
+    flex: 1,
+    width: "100%",
+    padding: "24px 32px",
+    boxSizing: "border-box",
+  }}
+>
             <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
               <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
                 <div
@@ -274,15 +281,17 @@ export function CategoriesPage() {
               </div>
             </div>
 
-            <div
-              style={{
-                background: "#fff",
-                border: "1px solid #E8EAFF",
-                borderRadius: 14,
-                padding: "16px 20px",
-                boxShadow: "0 1px 4px rgba(99,102,241,0.06)",
-              }}
-            >
+       <div
+  style={{
+    width: "100%",
+    background: "#fff",
+    border: "1px solid #E8EAFF",
+    borderRadius: 14,
+    padding: "16px 20px",
+    boxSizing: "border-box",
+    boxShadow: "0 1px 4px rgba(99,102,241,0.06)",
+  }}
+>
               <p style={{ fontSize: 12, color: "#94A3B8", margin: 0 }}>
                 Created by <strong style={{ color: "#475569" }}>{selected.createdByName}</strong> on{" "}
                 {new Date(selected.createdAt).toLocaleString("en-US", {
