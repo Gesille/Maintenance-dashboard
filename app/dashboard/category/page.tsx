@@ -5,8 +5,9 @@ import React from 'react'
 const page = () => {
   return (
     <div>
+         <CategoriesPage />
 <WorkOrderSidebar />
-        <CategoriesPage />
+       
       
     </div>
   )
