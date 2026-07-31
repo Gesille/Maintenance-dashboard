@@ -27,6 +27,8 @@ export interface CreatedVsCompletedReport {
 export interface ReactiveVsRepeatableReport {
   reactive: number;
   repeatable: number;
+  total: number;
+  percentRepeatable: number;
 }
 
 export interface StatusBreakdownReport {
@@ -42,11 +44,78 @@ export interface PriorityBreakdownRow {
   count: number;
 }
 
+export interface ResolutionTimeByPriority {
+  priority: string;
+  avgHours: number;
+  count: number;
+}
+
+export interface AverageResolutionTimeReport {
+  avgHours: number;
+  resolvedCount: number;
+  byPriority: ResolutionTimeByPriority[];
+}
+
+export interface TechnicianWorkloadRow {
+  technicianId: string;
+  technicianName: string;
+  open: number;
+  completed: number;
+  total: number;
+}
+
+export interface EquipmentReliabilityRow {
+  equipmentId: number;
+  name: string;
+  assetCode: string | null;
+  restaurant: string | null;
+  requestCount: number;
+  openCount: number;
+}
+
+export interface OverdueRequestRow {
+  id: number;
+  name: string;
+  priority: string;
+  status: "new" | "under_repair" | "done" | "cancel";
+  scheduleDate: string;
+  daysOverdue: number;
+}
+
+export interface OverdueRequestsReport {
+  count: number;
+  requests: OverdueRequestRow[];
+}
+
+export interface LocationBreakdownRow {
+  restaurant: string;
+  count: number;
+}
+
+export interface CategoryBreakdownRow {
+  category: string;
+  count: number;
+}
+
+export interface CostRollupReport {
+  activeAssetValue: number;
+  activeEquipmentCount: number;
+  totalAssetValue: number;
+  totalEquipmentCount: number;
+}
+
 export interface ReportingSummary {
   createdVsCompleted: CreatedVsCompletedReport;
   reactiveVsRepeatable: ReactiveVsRepeatableReport;
   statusBreakdown: StatusBreakdownReport;
   priorityBreakdown: PriorityBreakdownRow[];
+  averageResolutionTime: AverageResolutionTimeReport;
+  technicianWorkload: TechnicianWorkloadRow[];
+  equipmentReliability: EquipmentReliabilityRow[];
+  overdueRequests: OverdueRequestsReport;
+  locationBreakdown: LocationBreakdownRow[];
+  categoryBreakdown: CategoryBreakdownRow[];
+  costRollup: CostRollupReport;
 }
 
 interface ApiEnvelope<T> {
@@ -111,6 +180,86 @@ export const reportingApi = apiSlice.injectEndpoints({
       }),
       transformResponse: (res: ApiEnvelope<PriorityBreakdownRow[]>) => res.data,
     }),
+
+    // ─── Average resolution time (MTTR) ──────────────────────────────────────
+    getAverageResolutionTime: builder.query<AverageResolutionTimeReport, ReportingFilters | void>({
+      query: (filters) => ({
+        url: `reporting/resolution-time${buildQuery(filters ?? {})}`,
+        method: "GET",
+        credentials: "include" as const,
+      }),
+      transformResponse: (res: ApiEnvelope<AverageResolutionTimeReport>) => res.data,
+    }),
+
+    // ─── Technician workload ──────────────────────────────────────────────────
+    getTechnicianWorkload: builder.query<TechnicianWorkloadRow[], ReportingFilters | void>({
+      query: (filters) => ({
+        url: `reporting/technician-workload${buildQuery(filters ?? {})}`,
+        method: "GET",
+        credentials: "include" as const,
+      }),
+      transformResponse: (res: ApiEnvelope<TechnicianWorkloadRow[]>) => res.data,
+    }),
+
+    // ─── Equipment reliability / repeat offenders ────────────────────────────
+    getEquipmentReliability: builder.query<
+      EquipmentReliabilityRow[],
+      (ReportingFilters & { limit?: number }) | void
+    >({
+      query: (filters) => {
+        const { limit, ...rest } = filters ?? {};
+        const qs = buildQuery(rest);
+        const limitPart = limit ? (qs ? `&limit=${limit}` : `?limit=${limit}`) : "";
+        return {
+          url: `reporting/equipment-reliability${qs}${limitPart}`,
+          method: "GET",
+          credentials: "include" as const,
+        };
+      },
+      transformResponse: (res: ApiEnvelope<EquipmentReliabilityRow[]>) => res.data,
+    }),
+
+    // ─── Overdue requests ──────────────────────────────────────────────────────
+    // Not date-filtered on the backend — always relative to "now".
+    getOverdueRequests: builder.query<OverdueRequestsReport, void>({
+      query: () => ({
+        url: `reporting/overdue`,
+        method: "GET",
+        credentials: "include" as const,
+      }),
+      transformResponse: (res: ApiEnvelope<OverdueRequestsReport>) => res.data,
+    }),
+
+    // ─── Location / restaurant breakdown ─────────────────────────────────────
+    getLocationBreakdown: builder.query<LocationBreakdownRow[], ReportingFilters | void>({
+      query: (filters) => ({
+        url: `reporting/location-breakdown${buildQuery(filters ?? {})}`,
+        method: "GET",
+        credentials: "include" as const,
+      }),
+      transformResponse: (res: ApiEnvelope<LocationBreakdownRow[]>) => res.data,
+    }),
+
+    // ─── Equipment category breakdown ────────────────────────────────────────
+    getCategoryBreakdown: builder.query<CategoryBreakdownRow[], ReportingFilters | void>({
+      query: (filters) => ({
+        url: `reporting/category-breakdown${buildQuery(filters ?? {})}`,
+        method: "GET",
+        credentials: "include" as const,
+      }),
+      transformResponse: (res: ApiEnvelope<CategoryBreakdownRow[]>) => res.data,
+    }),
+
+    // ─── Cost rollup ───────────────────────────────────────────────────────────
+    // Not date-filtered on the backend — reflects current asset state.
+    getCostRollup: builder.query<CostRollupReport, void>({
+      query: () => ({
+        url: `reporting/cost-rollup`,
+        method: "GET",
+        credentials: "include" as const,
+      }),
+      transformResponse: (res: ApiEnvelope<CostRollupReport>) => res.data,
+    }),
   }),
   overrideExisting: false,
 });
@@ -121,4 +270,11 @@ export const {
   useGetReactiveVsRepeatableQuery,
   useGetStatusBreakdownQuery,
   useGetPriorityBreakdownQuery,
+  useGetAverageResolutionTimeQuery,
+  useGetTechnicianWorkloadQuery,
+  useGetEquipmentReliabilityQuery,
+  useGetOverdueRequestsQuery,
+  useGetLocationBreakdownQuery,
+  useGetCategoryBreakdownQuery,
+  useGetCostRollupQuery,
 } = reportingApi;
