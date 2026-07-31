@@ -1,6 +1,15 @@
-import { CategoriesPage } from "@/component/Categoriespage";
+import { CategoriesPage } from '@/component/Categoriespage'
+import { WorkOrderSidebar } from '@/component/Sidebar'
+import React from 'react'
 
-
-export default function Page() {
-  return <CategoriesPage />;
+const page = () => {
+  return (
+    <div>
+<WorkOrderSidebar />
+        <CategoriesPage />
+      
+    </div>
+  )
 }
+
+export default page
