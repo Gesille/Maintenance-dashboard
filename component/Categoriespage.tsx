@@ -210,7 +210,7 @@ export function CategoriesPage() {
       </div>
 
       {/* ── Detail panel ── */}
-      <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#FAFBFF" }}>
+      <div style={{ flex: 1, display: "flex", flexDirection: "column", background: "#FAFBFF" , minWidth: 0,}}>
         {!selected ? (
           <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#94A3B8", fontSize: 13 }}>
             Select a category to view its details
