@@ -5,7 +5,7 @@ import { WorkOrderSidebar } from '@/component/Sidebar';
 const page = () => {
  
    return (
-     <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: "#F8FAFF" }}>
+     <div style={{ height: "100vh", overflow: "hidden", background: "#F8FAFF" }}>
        <WorkOrderSidebar />
     
          <CategoriesPage />
