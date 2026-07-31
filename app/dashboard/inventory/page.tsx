@@ -14,7 +14,7 @@ interface Props {
 
 type Tab = "all" | "low";
 
-export function Page({ parts, selectedId, onSelect, onNew }: Props) {
+export default function Page({ parts, selectedId, onSelect, onNew }: Props) {
   const [search, setSearch] = useState("");
   const [tab, setTab] = useState<Tab>("all");
 
