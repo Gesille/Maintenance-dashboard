@@ -1,17 +1,25 @@
-import { PartListPanel } from '@/component/PartListPanel'
-import { Part } from '@/types/Part'
-import React from 'react'
+"use client";
 
-const page = () => {
+import { PartListPanel } from "@/component/PartListPanel";
+import { Part } from "@/types/Part";
+
+export default function Page() {
+  const handleSelect = (part: Part) => {
+    console.log("selected", part);
+  };
+
+  const handleNew = () => {
+    console.log("new part");
+  };
+
   return (
     <div>
-      <PartListPanel parts={[]} selectedId={null} onSelect={function (part: Part): void {
-        throw new Error('Function not implemented.')
-      } } onNew={function (): void {
-        throw new Error('Function not implemented.')
-      } } />
+      <PartListPanel
+        parts={[]}
+        selectedId={null}
+        onSelect={handleSelect}
+        onNew={handleNew}
+      />
     </div>
-  )
+  );
 }
-
-export default page
