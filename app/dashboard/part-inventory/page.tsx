@@ -2,7 +2,8 @@
 
 import { useMemo, useState } from "react";
 import { Search, Plus, AlertTriangle } from "lucide-react";
-import { Part } from "@/types/part";
+import { Part } from "@/types/Part";
+
 
 interface Props {
   parts: Part[];
