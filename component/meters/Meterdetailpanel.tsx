@@ -4,8 +4,8 @@ import { useMemo, useState } from "react";
 import { Meter, MeterTrigger, useGetMeterChartDataQuery, useGetMeterReadingHistoryQuery } from "@/redux/Meter/Meterapi";
 
 import { PRIORITY_CONFIG } from "@/types/tokens";
-import { MeterReadingChart } from "./Meterreadingchart";
 import { TRIGGER_OPERATOR_LABELS, METER_STATUS_CONFIG, METER_TYPE_LABELS, READING_TYPE_LABELS } from "@/types/Metertokens";
+import { MeterReadingChart } from "./Meterreadingchart";
 
 interface Props {
   meter: Meter;
@@ -132,7 +132,7 @@ export function MeterDetailPanel({
             },
             { label: "Recorded", value: formatDateTime(meter.lastReadingAt), icon: "ti-clock" },
             { label: "Meter type", value: METER_TYPE_LABELS[meter.meterType], icon: "ti-plug" },
-            { label: "Reading type", value: READING_TYPE_LABELS[meter.readingType], icon: "ti-arrows-diff" },
+            { label: "Reading type", value: READING_TYPE_LABELS[meter.readingType], icon: "ti-activity" },
           ].map((stat) => (
             <div
               key={stat.label}
