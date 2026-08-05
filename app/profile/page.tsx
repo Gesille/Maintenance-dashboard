@@ -197,7 +197,7 @@ const dispatch = useDispatch();
                 letterSpacing: "0.04em", textTransform: "capitalize",
               }}>
                 <Shield size={11} />
-                {user?.role ?? "user"}
+                {user?.role ?? "Enduser"}
               </span>
 
               {/* Section nav */}

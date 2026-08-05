@@ -17,7 +17,7 @@ import {
   useUpdateUserRoleMutation,
 } from "@/redux/user/userApi";
 
-const ROLES = ["user", "technician", "manager"] as const;
+const ROLES = ["Enduser", "technician", "manager"] as const;
 
 const ROLE_META: Record<string, { bg: string; text: string; border: string }> = {
   manager:    { bg: "#EEF2FF", text: "#4338CA", border: "#C7D2FE" },
