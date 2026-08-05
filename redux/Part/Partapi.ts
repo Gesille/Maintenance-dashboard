@@ -1,9 +1,104 @@
-/* eslint-disable @typescript-eslint/no-empty-object-type */
-// redux/Part/Partapi.ts
-import { Part, PartStockMovement, PartFormInput, PartFilters } from "@/types/Part";
 import { apiSlice } from "../api/apiSlice";
 
-// ── Response envelopes (mirrors Part.controller.ts responses exactly) ────────
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+export interface Part {
+  id: number;
+  name: string;
+  partNumber: string | null;
+  description: string | null;
+  category: string | null;
+  unitOfMeasure: string;
+  quantityOnHand: number;
+  minQuantity: number;
+  reorderQuantity: number | null;
+  unitCost: number;
+  vendor: string | null;
+  vendorPartNumber: string | null;
+  location: string | null;
+  barcode: string | null;
+  linkedEquipmentIds: number[];
+  active: boolean;
+  isLowStock: boolean; // virtual — computed on the server, not stored
+  createdAt: string;
+  updatedAt: string;
+}
+
+export type StockMovementType = "restock" | "consume" | "adjustment" | "initial";
+
+export interface PartStockMovement {
+  _id: string;
+  partId: number;
+  type: StockMovementType;
+  quantityDelta: number;
+  previousQuantity: number;
+  newQuantity: number;
+  reason: string | null;
+  referenceType: "maintenance_request" | "manual" | null;
+  referenceId: number | null;
+  performedById: string | null;
+  performedByName: string | null;
+  createdAt: string;
+}
+
+export interface CreatePartInput {
+  name: string;
+  partNumber?: string | null;
+  description?: string | null;
+  category?: string | null;
+  unitOfMeasure?: string;
+  quantityOnHand?: number;
+  minQuantity?: number;
+  reorderQuantity?: number | null;
+  unitCost?: number;
+  vendor?: string | null;
+  vendorPartNumber?: string | null;
+  location?: string | null;
+  barcode?: string | null;
+  linkedEquipmentIds?: number[];
+}
+
+export type UpdatePartInput = Partial<
+  Pick<
+    CreatePartInput,
+    | "name"
+    | "partNumber"
+    | "description"
+    | "category"
+    | "unitOfMeasure"
+    | "minQuantity"
+    | "reorderQuantity"
+    | "unitCost"
+    | "vendor"
+    | "vendorPartNumber"
+    | "location"
+    | "barcode"
+  >
+>;
+
+export const EMPTY_PART_FORM: CreatePartInput = {
+  name: "",
+  partNumber: null,
+  description: null,
+  category: null,
+  unitOfMeasure: "pcs",
+  quantityOnHand: 0,
+  minQuantity: 0,
+  reorderQuantity: null,
+  unitCost: 0,
+  vendor: null,
+  vendorPartNumber: null,
+  location: null,
+  barcode: null,
+  linkedEquipmentIds: [],
+};
+
+export interface PartFilters {
+  category?: string;
+  equipmentId?: number;
+  lowStockOnly?: boolean;
+  search?: string;
+}
 
 interface ListResponse {
   success: boolean;
@@ -17,7 +112,7 @@ interface SingleResponse {
   data: Part;
 }
 
-interface MovementListResponse {
+interface StockMovementListResponse {
   success: boolean;
   total: number;
   data: PartStockMovement[];
@@ -28,53 +123,22 @@ interface DeleteResponse {
   message: string;
 }
 
-// ── Mutation payload shapes ───────────────────────────────────────────────────
-
-export interface CreatePartPayload extends Omit<PartFormInput, never> {}
-
-export type UpdatePartPayload = Partial<
-  Omit<PartFormInput, "quantityOnHand" | "linkedEquipmentIds">
->;
-
-export interface StockActionPayload {
-  id: number;
-  quantity: number;
-  reason?: string;
-}
-
-export interface AdjustPayload {
-  id: number;
-  newQuantity: number;
-  reason?: string;
-}
-
-export interface ConsumePayload extends StockActionPayload {
-  maintenanceRequestId?: number;
-}
-
-export interface LinkEquipmentPayload {
-  id: number;
-  equipmentId: number;
-}
-
-// Builds a query string from PartFilters, skipping anything unset
-function buildFilterQuery(filters: PartFilters = {}) {
-  const params = new URLSearchParams();
-  if (filters.category) params.set("category", filters.category);
-  if (filters.equipmentId !== undefined) params.set("equipmentId", String(filters.equipmentId));
-  if (filters.lowStockOnly) params.set("lowStockOnly", "true");
-  if (filters.search) params.set("search", filters.search);
-  const qs = params.toString();
-  return qs ? `?${qs}` : "";
-}
+// ── Slice ─────────────────────────────────────────────────────────────────────
 
 export const partApi = apiSlice.injectEndpoints({
   endpoints: (builder) => ({
-    // ── Reads ──────────────────────────────────────────────────────────────
     getAllParts: builder.query<ListResponse, PartFilters | void>({
-      query: (filters) => ({
-        url: `get-all-parts${buildFilterQuery(filters ?? {})}`,
+      query: (params) => ({
+        url: "get-all-parts",
         method: "GET",
+        params: params
+          ? {
+              category: params.category,
+              equipmentId: params.equipmentId,
+              lowStockOnly: params.lowStockOnly ? "true" : undefined,
+              search: params.search,
+            }
+          : undefined,
         credentials: "include" as const,
       }),
       providesTags: (result) =>
@@ -102,7 +166,13 @@ export const partApi = apiSlice.injectEndpoints({
         method: "GET",
         credentials: "include" as const,
       }),
-      providesTags: [{ type: "Part", id: "LOW_STOCK" }],
+      providesTags: (result) =>
+        result
+          ? [
+              ...result.data.map((p) => ({ type: "Part" as const, id: p.id })),
+              { type: "Part" as const, id: "LOW_STOCK" },
+            ]
+          : [{ type: "Part" as const, id: "LOW_STOCK" }],
     }),
 
     getPartsByEquipment: builder.query<ListResponse, number>({
@@ -111,32 +181,40 @@ export const partApi = apiSlice.injectEndpoints({
         method: "GET",
         credentials: "include" as const,
       }),
-      providesTags: (_result, _err, equipmentId) => [
-        { type: "Part", id: `EQUIPMENT_${equipmentId}` },
-      ],
+      providesTags: (result, _err, equipmentId) =>
+        result
+          ? [
+              ...result.data.map((p) => ({ type: "Part" as const, id: p.id })),
+              { type: "Part" as const, id: `EQUIPMENT_${equipmentId}` },
+            ]
+          : [{ type: "Part" as const, id: `EQUIPMENT_${equipmentId}` }],
     }),
 
-    getPartStockHistory: builder.query<MovementListResponse, number>({
-      query: (id) => ({
-        url: `stock-history/${id}`,
+    getPartStockHistory: builder.query<StockMovementListResponse, number>({
+      query: (partId) => ({
+        url: `stock-history/${partId}`,
         method: "GET",
         credentials: "include" as const,
       }),
-      providesTags: (_result, _err, id) => [{ type: "PartStockMovement", id }],
+      providesTags: (_result, _err, partId) => [
+        { type: "PartStockMovement" as const, id: partId },
+      ],
     }),
 
-    // ── Create / update / delete ──────────────────────────────────────────
-    createPart: builder.mutation<SingleResponse, CreatePartPayload>({
+    createPart: builder.mutation<SingleResponse, CreatePartInput>({
       query: (body) => ({
         url: "create-part",
         method: "POST",
         body,
         credentials: "include" as const,
       }),
-      invalidatesTags: [{ type: "Part", id: "LIST" }, { type: "Part", id: "LOW_STOCK" }],
+      invalidatesTags: [
+        { type: "Part", id: "LIST" },
+        { type: "Part", id: "LOW_STOCK" },
+      ],
     }),
 
-    updatePart: builder.mutation<SingleResponse, { id: number; data: UpdatePartPayload }>({
+    updatePart: builder.mutation<SingleResponse, { id: number; data: UpdatePartInput }>({
       query: ({ id, data }) => ({
         url: `update-part/${id}`,
         method: "PUT",
@@ -162,8 +240,10 @@ export const partApi = apiSlice.injectEndpoints({
       ],
     }),
 
-    // ── Stock movement ────────────────────────────────────────────────────
-    restockPart: builder.mutation<SingleResponse, StockActionPayload>({
+    restockPart: builder.mutation<
+      SingleResponse,
+      { id: number; quantity: number; reason?: string }
+    >({
       query: ({ id, quantity, reason }) => ({
         url: `restock/${id}`,
         method: "PATCH",
@@ -178,7 +258,10 @@ export const partApi = apiSlice.injectEndpoints({
       ],
     }),
 
-    consumePart: builder.mutation<SingleResponse, ConsumePayload>({
+    consumePart: builder.mutation<
+      SingleResponse,
+      { id: number; quantity: number; reason?: string; maintenanceRequestId?: number }
+    >({
       query: ({ id, quantity, reason, maintenanceRequestId }) => ({
         url: `consume/${id}`,
         method: "PATCH",
@@ -193,7 +276,10 @@ export const partApi = apiSlice.injectEndpoints({
       ],
     }),
 
-    adjustPartQuantity: builder.mutation<SingleResponse, AdjustPayload>({
+    adjustPartQuantity: builder.mutation<
+      SingleResponse,
+      { id: number; newQuantity: number; reason?: string }
+    >({
       query: ({ id, newQuantity, reason }) => ({
         url: `adjust/${id}`,
         method: "PATCH",
@@ -208,8 +294,7 @@ export const partApi = apiSlice.injectEndpoints({
       ],
     }),
 
-    // ── Equipment linking ──────────────────────────────────────────────────
-    linkPartToEquipment: builder.mutation<SingleResponse, LinkEquipmentPayload>({
+    linkPartToEquipment: builder.mutation<SingleResponse, { id: number; equipmentId: number }>({
       query: ({ id, equipmentId }) => ({
         url: `link-equipment/${id}`,
         method: "POST",
@@ -223,7 +308,7 @@ export const partApi = apiSlice.injectEndpoints({
       ],
     }),
 
-    unlinkPartFromEquipment: builder.mutation<SingleResponse, LinkEquipmentPayload>({
+    unlinkPartFromEquipment: builder.mutation<SingleResponse, { id: number; equipmentId: number }>({
       query: ({ id, equipmentId }) => ({
         url: `unlink-equipment/${id}/${equipmentId}`,
         method: "DELETE",
