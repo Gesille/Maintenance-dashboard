@@ -9,7 +9,6 @@ import { useGetAllEquipmentQuery } from "@/redux/Equipment/Equipmentapi";
 import { useGetAllPartsQuery, useGetPartStockHistoryQuery, useRestockPartMutation, useConsumePartMutation, useAdjustPartQuantityMutation, useLinkPartToEquipmentMutation, useUnlinkPartFromEquipmentMutation, useDeletePartMutation, CreatePartInput, useCreatePartMutation } from "@/redux/part/Partapi";
 import { Part, EMPTY_PART_FORM } from "@/types/Part";
 
-// ─── Style tokens (same palette as tokens.ts) ────────────────────────────────
 
 const STOCK_HEALTH = {
   low: { label: "Low stock", bg: "#FEF2F2", text: "#B91C1C", border: "#FECACA", dot: "#EF4444" },
