@@ -20,22 +20,25 @@ import {
   CreatePartInput,
   useCreatePartMutation,
 } from "@/redux/Part/Partapi";
+import { CATEGORY_COLORS } from "@/types/tokens";
 
 // ─── Design tokens ──────────────────────────────────────────────────────────
-// Functional palette: color communicates status (in-stock / low / danger),
-// not decoration. Teal is the single primary accent, used sparingly.
+// Same neutral base as before, but paired with a small set of saturated
+// accents (indigo / amber / violet / teal) so status, category, and stat
+// data read at a glance instead of everything sharing one gray-and-teal look.
 
 const COLOR = {
-  bg: "#F7F8FA",
+  bg: "#F8FAFF",
   surface: "#FFFFFF",
   border: "#E5E7EB",
   borderSubtle: "#F1F2F4",
   textPrimary: "#14181F",
   textSecondary: "#667085",
   textTertiary: "#9CA3AF",
-  accent: "#2A6F63",
-  accentSurface: "#EDF5F3",
-  accentBorder: "#BFDED6",
+  accent: "#6366F1",
+  accentDeep: "#8B5CF6",
+  accentSurface: "#EEF2FF",
+  accentBorder: "#C7D2FE",
   danger: "#B42318",
   dangerSurface: "#FEF3F2",
   dangerBorder: "#FDA29B",
@@ -52,6 +55,17 @@ const STOCK_HEALTH = {
   ok: { label: "In stock", bg: COLOR.successSurface, text: COLOR.success, border: COLOR.successBorder, dot: "#22C55E" },
 } as const;
 
+// Distinct tinted accent per stat cell so the strip reads as data, not a
+// wall of gray — mirrors the way status/priority chips work elsewhere.
+const STAT_ACCENTS = {
+  onHand: { text: "#3730A3", bg: "#EEF2FF", border: "#C7D2FE" },
+  minimum: { text: "#92400E", bg: "#FFFBEB", border: "#FDE68A" },
+  unitCost: { text: "#6D28D9", bg: "#F5F3FF", border: "#DDD6FE" },
+  stockValue: { text: "#0F766E", bg: "#F0FDFA", border: "#99F6E4" },
+} as const;
+
+const DEFAULT_CATEGORY_COLOR = { bg: "#F9FAFB", text: "#374151" };
+
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 function formatCurrency(n: number): string {
@@ -60,6 +74,11 @@ function formatCurrency(n: number): string {
 
 function stockHealth(part: Part): keyof typeof STOCK_HEALTH {
   return part.isLowStock ? "low" : "ok";
+}
+
+function categoryStyle(name?: string | null) {
+  if (!name) return DEFAULT_CATEGORY_COLOR;
+  return CATEGORY_COLORS[name] ?? DEFAULT_CATEGORY_COLOR;
 }
 
 function formatDate(iso: string | null | undefined): string {
@@ -132,31 +151,51 @@ export default function PartsInventoryPage() {
 
   if (isLoading) {
     return (
-      <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: COLOR.bg }}>
-        <WorkOrderSidebar />
-        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
-          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-            <span
-              style={{
-                width: 16,
-                height: 16,
-                borderRadius: "50%",
-                border: `2px solid ${COLOR.border}`,
-                borderTopColor: COLOR.accent,
-                animation: "spin 0.7s linear infinite",
-              }}
-            />
-            <p style={{ fontSize: 13, color: COLOR.textSecondary, margin: 0 }}>Loading parts inventory…</p>
-          </div>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          height: "100vh",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "linear-gradient(135deg, #F5F3FF 0%, #EEF2FF 50%, #F0F9FF 100%)",
+          gap: 16,
+        }}
+      >
+        <div
+          style={{
+            width: 48,
+            height: 48,
+            borderRadius: 14,
+            background: `linear-gradient(135deg, ${COLOR.accent} 0%, ${COLOR.accentDeep} 100%)`,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            boxShadow: "0 8px 24px rgba(99,102,241,0.35)",
+            animation: "breathe 1.5s ease-in-out infinite",
+          }}
+        >
+          <i className="ti ti-package" style={{ fontSize: 22, color: "#fff" }} aria-hidden="true" />
         </div>
-        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        <div style={{ textAlign: "center" }}>
+          <p style={{ fontSize: 15, fontWeight: 700, color: "#3730A3", margin: "0 0 4px", letterSpacing: "-0.02em" }}>
+            Parts Inventory
+          </p>
+          <p style={{ fontSize: 12, color: "#A5B4FC", margin: 0 }}>Loading parts…</p>
+        </div>
+        <style>{`
+          @keyframes breathe {
+            0%, 100% { transform: scale(1); box-shadow: 0 8px 24px rgba(99,102,241,0.35); }
+            50% { transform: scale(1.06); box-shadow: 0 12px 32px rgba(99,102,241,0.5); }
+          }
+        `}</style>
       </div>
     );
   }
 
   if (isError) {
     return (
-      <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: COLOR.bg }}>
+      <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: "#FFF5F5" }}>
         <WorkOrderSidebar />
         <div
           style={{
@@ -168,7 +207,19 @@ export default function PartsInventoryPage() {
             gap: 14,
           }}
         >
-          <i className="ti ti-alert-triangle" style={{ fontSize: 22, color: COLOR.danger }} aria-hidden="true" />
+          <div
+            style={{
+              width: 52,
+              height: 52,
+              borderRadius: "50%",
+              background: "#FEE2E2",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <i className="ti ti-alert-triangle" style={{ fontSize: 24, color: "#DC2626" }} aria-hidden="true" />
+          </div>
           <div style={{ textAlign: "center" }}>
             <p style={{ fontSize: 14, fontWeight: 600, color: COLOR.textPrimary, margin: "0 0 4px" }}>
               Couldn&apos;t load parts inventory
@@ -246,7 +297,12 @@ function buttonStyle(variant: "primary" | "secondary" | "danger" | "ghost"): Rea
   };
   switch (variant) {
     case "primary":
-      return { ...base, background: COLOR.accent, color: "#fff" };
+      return {
+        ...base,
+        background: `linear-gradient(135deg, ${COLOR.accent} 0%, ${COLOR.accentDeep} 100%)`,
+        color: "#fff",
+        boxShadow: "0 4px 12px rgba(99,102,241,0.35)",
+      };
     case "danger":
       return { ...base, background: COLOR.dangerSurface, color: COLOR.danger, border: `1px solid ${COLOR.dangerBorder}` };
     case "ghost":
@@ -424,6 +480,7 @@ function PartListPanel({
           const health = STOCK_HEALTH[stockHealth(p)];
           const active = p.id === selectedId;
           const low = p.isLowStock;
+          const catStyle = categoryStyle(p.category);
           return (
             <button
               key={p.id}
@@ -442,33 +499,70 @@ function PartListPanel({
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, minWidth: 0 }}>
-                <div style={{ minWidth: 0, flex: 1 }}>
-                  <p
+                <div style={{ display: "flex", alignItems: "flex-start", gap: 10, minWidth: 0, flex: 1 }}>
+                  <div
                     style={{
-                      margin: "0 0 3px",
-                      fontSize: 13.5,
-                      fontWeight: 600,
-                      color: COLOR.textPrimary,
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
+                      width: 28,
+                      height: 28,
+                      borderRadius: 8,
+                      background: catStyle.bg,
+                      color: catStyle.text,
+                      flexShrink: 0,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      fontSize: 10.5,
+                      fontWeight: 700,
                     }}
                   >
-                    {p.name}
-                  </p>
-                  <p
-                    style={{
-                      margin: 0,
-                      fontSize: 12,
-                      color: COLOR.textTertiary,
-                      fontFamily: MONO,
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                    }}
-                  >
-                    {p.partNumber || "No part #"} {p.category ? `· ${p.category}` : ""}
-                  </p>
+                    {initials(p.name)}
+                  </div>
+                  <div style={{ minWidth: 0, flex: 1 }}>
+                    <p
+                      style={{
+                        margin: "0 0 3px",
+                        fontSize: 13.5,
+                        fontWeight: 600,
+                        color: COLOR.textPrimary,
+                        whiteSpace: "nowrap",
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                      }}
+                    >
+                      {p.name}
+                    </p>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
+                      <p
+                        style={{
+                          margin: 0,
+                          fontSize: 12,
+                          color: COLOR.textTertiary,
+                          fontFamily: MONO,
+                          whiteSpace: "nowrap",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                        }}
+                      >
+                        {p.partNumber || "No part #"}
+                      </p>
+                      {p.category && (
+                        <span
+                          style={{
+                            flexShrink: 0,
+                            fontSize: 10.5,
+                            fontWeight: 700,
+                            padding: "1px 7px",
+                            borderRadius: 999,
+                            background: catStyle.bg,
+                            color: catStyle.text,
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {p.category}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
                 <span
                   style={{
@@ -515,7 +609,19 @@ function EmptyDetailState() {
         gap: 10,
       }}
     >
-      <i className="ti ti-package" style={{ fontSize: 26, color: COLOR.textTertiary }} aria-hidden="true" />
+      <div
+        style={{
+          width: 44,
+          height: 44,
+          borderRadius: 12,
+          background: COLOR.accentSurface,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <i className="ti ti-package" style={{ fontSize: 20, color: COLOR.accent }} aria-hidden="true" />
+      </div>
       <p style={{ fontSize: 14, fontWeight: 600, color: COLOR.textPrimary, margin: 0 }}>Select a part</p>
       <p style={{ fontSize: 12.5, color: COLOR.textTertiary, margin: 0 }}>Choose a part from the list to see its details.</p>
     </div>
@@ -554,6 +660,7 @@ function PartDetailPanel({
   const isLow = healthKey === "low";
   const history = historyData?.data ?? [];
   const stockValue = part.unitCost * part.quantityOnHand;
+  const catStyle = categoryStyle(part.category);
 
   const handleRestock = async () => {
     const qty = Number(restockQty);
@@ -633,14 +740,14 @@ function PartDetailPanel({
             width: 42,
             height: 42,
             borderRadius: 10,
-            background: COLOR.accentSurface,
+            background: catStyle.bg,
             flexShrink: 0,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
             fontSize: 13,
             fontWeight: 700,
-            color: COLOR.accent,
+            color: catStyle.text,
           }}
         >
           {initials(part.name)}
@@ -679,6 +786,23 @@ function PartDetailPanel({
               <span style={{ width: 6, height: 6, borderRadius: "50%", background: health.dot, flexShrink: 0 }} />
               {health.label}
             </span>
+            {part.category && (
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  padding: "3px 10px",
+                  borderRadius: 999,
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  background: catStyle.bg,
+                  color: catStyle.text,
+                  flexShrink: 0,
+                }}
+              >
+                {part.category}
+              </span>
+            )}
           </div>
           <p
             style={{
@@ -691,7 +815,7 @@ function PartDetailPanel({
               whiteSpace: "nowrap",
             }}
           >
-            {part.partNumber || "No part number"} {part.category ? `· ${part.category}` : ""}
+            {part.partNumber || "No part number"}
           </p>
         </div>
 
@@ -706,20 +830,21 @@ function PartDetailPanel({
         </button>
       </div>
 
-      {/* Stat strip — wraps instead of forcing a wider layout */}
+      {/* Stat strip — each cell gets its own accent so the row reads as data */}
       <div
         style={{
           display: "grid",
           gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-          gap: 1,
-          background: COLOR.borderSubtle,
+          gap: 10,
+          padding: "14px 28px",
           borderBottom: `1px solid ${COLOR.borderSubtle}`,
+          boxSizing: "border-box",
         }}
       >
-        <StatCell label="On hand" value={`${part.quantityOnHand} ${part.unitOfMeasure}`} warning={isLow} />
-        <StatCell label="Minimum" value={String(part.minQuantity)} />
-        <StatCell label="Unit cost" value={formatCurrency(part.unitCost)} />
-        <StatCell label="Stock value" value={formatCurrency(stockValue)} />
+        <StatCell label="On hand" value={`${part.quantityOnHand} ${part.unitOfMeasure}`} accent={STAT_ACCENTS.onHand} warning={isLow} />
+        <StatCell label="Minimum" value={String(part.minQuantity)} accent={STAT_ACCENTS.minimum} />
+        <StatCell label="Unit cost" value={formatCurrency(part.unitCost)} accent={STAT_ACCENTS.unitCost} />
+        <StatCell label="Stock value" value={formatCurrency(stockValue)} accent={STAT_ACCENTS.stockValue} />
       </div>
 
       {/* Two-column body */}
@@ -950,12 +1075,27 @@ function PartDetailPanel({
   );
 }
 
-function StatCell({ label, value, warning }: { label: string; value: string; warning?: boolean }) {
+function StatCell({
+  label,
+  value,
+  accent,
+  warning,
+}: {
+  label: string;
+  value: string;
+  accent: { text: string; bg: string; border: string };
+  warning?: boolean;
+}) {
+  const bg = warning ? COLOR.dangerSurface : accent.bg;
+  const text = warning ? COLOR.danger : accent.text;
+  const border = warning ? COLOR.dangerBorder : accent.border;
   return (
     <div
       style={{
-        background: warning ? COLOR.dangerSurface : COLOR.surface,
-        padding: "14px 18px",
+        background: bg,
+        border: `1px solid ${border}`,
+        borderRadius: 10,
+        padding: "12px 16px",
         minWidth: 0,
       }}
     >
@@ -963,13 +1103,14 @@ function StatCell({ label, value, warning }: { label: string; value: string; war
         style={{
           margin: "0 0 4px",
           fontSize: 10.5,
-          color: warning ? COLOR.danger : COLOR.textTertiary,
+          color: text,
+          opacity: warning ? 1 : 0.85,
           textTransform: "uppercase",
           letterSpacing: "0.04em",
           display: "flex",
           alignItems: "center",
           gap: 4,
-          fontWeight: warning ? 700 : 400,
+          fontWeight: warning ? 700 : 600,
         }}
       >
         {warning && <i className="ti ti-alert-triangle" style={{ fontSize: 11 }} aria-hidden="true" />}
@@ -981,7 +1122,7 @@ function StatCell({ label, value, warning }: { label: string; value: string; war
           fontSize: 15,
           fontWeight: 700,
           fontFamily: MONO,
-          color: warning ? COLOR.danger : COLOR.textPrimary,
+          color: text,
           overflow: "hidden",
           textOverflow: "ellipsis",
           whiteSpace: "nowrap",
@@ -1023,12 +1164,16 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
       style={{
         fontSize: 11.5,
         fontWeight: 700,
-        color: COLOR.textTertiary,
+        color: COLOR.accent,
         textTransform: "uppercase",
         letterSpacing: "0.04em",
         margin: "0 0 10px",
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
       }}
     >
+      <span style={{ width: 3, height: 12, borderRadius: 2, background: COLOR.accent, display: "inline-block" }} />
       {children}
     </h3>
   );
