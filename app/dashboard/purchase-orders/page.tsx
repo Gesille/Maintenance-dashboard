@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useMemo, useState } from "react";
+import { JSX, useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import {
   Plus,
@@ -546,6 +546,9 @@ export default function PurchaseOrdersPage() {
 // "return null but still take up a grid cell" bug.
 // ─────────────────────────────────────────────────────────────────────────────
 
+
+import { useRef } from "react";
+
 function RowActions({
   po,
   onEdit,
@@ -566,56 +569,74 @@ function RowActions({
   onFulfill: () => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
+  const btnRef = useRef<HTMLButtonElement>(null);
   const canCancel = !po.items.some((i) => i.quantityFulfilled > 0);
+
+  function toggleOpen() {
+    if (!open && btnRef.current) {
+      const rect = btnRef.current.getBoundingClientRect();
+      setCoords({ top: rect.bottom + 6, left: rect.right - 190 });
+    }
+    setOpen((v) => !v);
+  }
+
+  function createPortal(arg0: JSX.Element, body: HTMLElement): import("react").ReactNode {
+    throw new Error("Function not implemented.");
+  }
 
   return (
     <div style={{ position: "relative", display: "flex", justifyContent: "flex-end" }}>
       <button
-        onClick={() => setOpen((v) => !v)}
+        ref={btnRef}
+        onClick={toggleOpen}
         style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", padding: 6, borderRadius: 8, display: "flex" }}
       >
         <ChevronDown size={15} />
       </button>
-      {open && (
-        <>
-          <div style={{ position: "fixed", inset: 0, zIndex: 10 }} onClick={() => setOpen(false)} />
-          <div
-            style={{
-              position: "absolute",
-              right: 0,
-              top: 30,
-              zIndex: 20,
-              width: 190,
-              borderRadius: 12,
-              border: "1px solid #E8EAFF",
-              background: "#fff",
-              padding: "6px 0",
-              boxShadow: "0 12px 32px rgba(15,23,42,0.14)",
-            }}
-          >
-            {po.status === "requested" && (
-              <>
-                <MenuItem icon={Check} label="Approve" onClick={() => { onApprove(); setOpen(false); }} />
-                <MenuItem icon={Ban} label="Decline" onClick={() => { onDecline(); setOpen(false); }} />
-                <MenuItem icon={Pencil} label="Edit" onClick={() => { onEdit(); setOpen(false); }} />
-              </>
-            )}
-            {po.status === "approved" && (
-              <>
-                <MenuItem icon={Truck} label="Mark as ordered" onClick={() => { onMarkOrdered(); setOpen(false); }} />
-                <MenuItem icon={Pencil} label="Edit" onClick={() => { onEdit(); setOpen(false); }} />
-              </>
-            )}
-            {(po.status === "ordered" || po.status === "partially_fulfilled") && (
-              <MenuItem icon={PackageCheck} label="Fulfill items" onClick={() => { onFulfill(); setOpen(false); }} />
-            )}
-            {canCancel && !["cancelled", "declined", "fulfilled"].includes(po.status) && (
-              <MenuItem icon={Ban} label="Cancel" onClick={() => { onCancel(); setOpen(false); }} />
-            )}
-            <MenuItem icon={Trash2} label="Delete" danger onClick={() => { onDelete(); setOpen(false); }} />
-          </div>
-        </>
-      )}
+
+      {open && coords &&
+        createPortal(
+          <>
+            <div style={{ position: "fixed", inset: 0, zIndex: 1000 }} onClick={() => setOpen(false)} />
+            <div
+              style={{
+                position: "fixed",
+                top: coords.top,
+                left: coords.left,
+                zIndex: 1001,
+                width: 190,
+                borderRadius: 12,
+                border: "1px solid #E8EAFF",
+                background: "#fff",
+                padding: "6px 0",
+                boxShadow: "0 12px 32px rgba(15,23,42,0.14)",
+              }}
+            >
+              {po.status === "requested" && (
+                <>
+                  <MenuItem icon={Check} label="Approve" onClick={() => { onApprove(); setOpen(false); }} />
+                  <MenuItem icon={Ban} label="Decline" onClick={() => { onDecline(); setOpen(false); }} />
+                  <MenuItem icon={Pencil} label="Edit" onClick={() => { onEdit(); setOpen(false); }} />
+                </>
+              )}
+              {po.status === "approved" && (
+                <>
+                  <MenuItem icon={Truck} label="Mark as ordered" onClick={() => { onMarkOrdered(); setOpen(false); }} />
+                  <MenuItem icon={Pencil} label="Edit" onClick={() => { onEdit(); setOpen(false); }} />
+                </>
+              )}
+              {(po.status === "ordered" || po.status === "partially_fulfilled") && (
+                <MenuItem icon={PackageCheck} label="Fulfill items" onClick={() => { onFulfill(); setOpen(false); }} />
+              )}
+              {canCancel && !["cancelled", "declined", "fulfilled"].includes(po.status) && (
+                <MenuItem icon={Ban} label="Cancel" onClick={() => { onCancel(); setOpen(false); }} />
+              )}
+              <MenuItem icon={Trash2} label="Delete" danger onClick={() => { onDelete(); setOpen(false); }} />
+            </div>
+          </>,
+          document.body,
+        )}
     </div>
   );
 }
