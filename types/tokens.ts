@@ -150,7 +150,7 @@ export const NAV_ITEMS = [
   { label: "Parts Inventory", icon: "ti-chart-bar", href: "/dashboard/part-inventory" },
 
 ];
-
+//
 export const NAV_ASSET_ITEMS = [
   { label: "Equipment", icon: "ti-building-factory-2", href: "/dashboard/equipment" },
   { label: "QR Code ", icon: "ti-map-pin", href: "/dashboard/qr-code" },
