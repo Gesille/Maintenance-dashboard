@@ -40,6 +40,14 @@ function formatDate(iso: string | null | undefined): string {
   });
 }
 
+function initials(name: string): string {
+  return name
+    .split(" ")
+    .slice(0, 2)
+    .map((w) => w[0]?.toUpperCase() ?? "")
+    .join("") || "PT";
+}
+
 // ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function PartsInventoryPage() {
@@ -175,7 +183,7 @@ export default function PartsInventoryPage() {
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: "#F8FAFF" }}>
       <WorkOrderSidebar />
-      <main style={{ flex: 1, display: "flex", overflow: "hidden" }}>
+      <main style={{ flex: 1, display: "flex", overflow: "hidden", minWidth: 0 }}>
         <PartListPanel
           parts={parts}
           categories={categories}
@@ -190,11 +198,14 @@ export default function PartsInventoryPage() {
           onLowStockToggle={() => setLowStockOnly((v) => !v)}
         />
 
-        {selectedPart && (
+        {selectedPart ? (
           <PartDetailPanel
+            key={selectedPart.id}
             part={selectedPart}
             equipmentOptions={equipmentOptions}
           />
+        ) : (
+          <EmptyDetailState />
         )}
 
         <NewPartModal
@@ -234,19 +245,22 @@ function PartListPanel({
   lowStockOnly: boolean;
   onLowStockToggle: () => void;
 }) {
+  const lowStockCount = parts.filter((p) => p.isLowStock).length;
+
   return (
     <div
       style={{
-        width: 420,
-        borderRight: "1px solid #E5E7EB",
+        width: 380,
+        flexShrink: 0,
+        borderRight: "1px solid #ECEBFB",
         display: "flex",
         flexDirection: "column",
         background: "#fff",
       }}
     >
-      <div style={{ padding: "20px 20px 14px", borderBottom: "1px solid #F1F5F9" }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-          <h1 style={{ fontSize: 17, fontWeight: 700, color: "#1E1B4B", margin: 0, letterSpacing: "-0.02em" }}>
+      <div style={{ padding: "22px 20px 14px", borderBottom: "1px solid #F1F5F9" }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 4 }}>
+          <h1 style={{ fontSize: 18, fontWeight: 700, color: "#1E1B4B", margin: 0, letterSpacing: "-0.02em" }}>
             Parts Inventory
           </h1>
           <button
@@ -264,12 +278,21 @@ function PartListPanel({
               fontWeight: 600,
               cursor: "pointer",
               boxShadow: "0 4px 12px rgba(99,102,241,0.3)",
+              transition: "transform 0.15s ease, box-shadow 0.15s ease",
             }}
+            onMouseDown={(e) => (e.currentTarget.style.transform = "scale(0.97)")}
+            onMouseUp={(e) => (e.currentTarget.style.transform = "scale(1)")}
           >
             <i className="ti ti-plus" style={{ fontSize: 13 }} aria-hidden="true" />
             New Part
           </button>
         </div>
+        <p style={{ margin: "0 0 16px", fontSize: 12.5, color: "#9CA3AF" }}>
+          {parts.length} {parts.length === 1 ? "part" : "parts"}
+          {lowStockCount > 0 && (
+            <span style={{ color: "#DC2626", fontWeight: 600 }}> · {lowStockCount} low stock</span>
+          )}
+        </p>
 
         <div style={{ position: "relative", marginBottom: 10 }}>
           <i
@@ -337,6 +360,7 @@ function PartListPanel({
               fontWeight: 600,
               cursor: "pointer",
               whiteSpace: "nowrap",
+              transition: "background 0.15s ease, border-color 0.15s ease",
             }}
           >
             <i className="ti ti-alert-triangle" style={{ fontSize: 13 }} aria-hidden="true" />
@@ -347,8 +371,9 @@ function PartListPanel({
 
       <div style={{ flex: 1, overflowY: "auto" }}>
         {parts.length === 0 && (
-          <div style={{ padding: 32, textAlign: "center", color: "#9CA3AF", fontSize: 13 }}>
-            No parts match your filters.
+          <div style={{ padding: "48px 24px", textAlign: "center" }}>
+            <i className="ti ti-package-off" style={{ fontSize: 26, color: "#C7D2FE" }} aria-hidden="true" />
+            <p style={{ fontSize: 13, color: "#9CA3AF", margin: "10px 0 0" }}>No parts match your filters.</p>
           </div>
         )}
         {parts.map((p) => {
@@ -368,6 +393,7 @@ function PartListPanel({
                 background: active ? "#F5F3FF" : "transparent",
                 borderLeft: active ? "3px solid #6366F1" : "3px solid transparent",
                 cursor: "pointer",
+                transition: "background 0.12s ease",
               }}
             >
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
@@ -412,6 +438,41 @@ function PartListPanel({
   );
 }
 
+// ─── Empty detail state (shown when nothing is selected) ─────────────────────
+
+function EmptyDetailState() {
+  return (
+    <div
+      style={{
+        flex: 1,
+        minWidth: 0,
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "#fff",
+        gap: 10,
+      }}
+    >
+      <div
+        style={{
+          width: 56,
+          height: 56,
+          borderRadius: 16,
+          background: "#F5F3FF",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+        }}
+      >
+        <i className="ti ti-package" style={{ fontSize: 24, color: "#A5B4FC" }} aria-hidden="true" />
+      </div>
+      <p style={{ fontSize: 14, fontWeight: 600, color: "#4B5563", margin: 0 }}>Select a part</p>
+      <p style={{ fontSize: 12.5, color: "#9CA3AF", margin: 0 }}>Choose a part from the list to see its details.</p>
+    </div>
+  );
+}
+
 // ─── Detail panel ─────────────────────────────────────────────────────────────
 
 function PartDetailPanel({
@@ -436,6 +497,7 @@ function PartDetailPanel({
 
   const health = STOCK_HEALTH[stockHealth(part)];
   const history = historyData?.data ?? [];
+  const stockValue = part.unitCost * part.quantityOnHand;
 
   const handleRestock = async () => {
     const qty = Number(restockQty);
@@ -469,213 +531,326 @@ function PartDetailPanel({
   };
 
   return (
-    <div
-      style={{
-        width: 420,
-        borderLeft: "1px solid #E5E7EB",
-        overflowY: "auto",
-        background: "#fff",
-        padding: "24px 24px 40px",
-      }}
-    >
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: 4 }}>
-        <h2 style={{ fontSize: 17, fontWeight: 700, color: "#1E1B4B", margin: 0, letterSpacing: "-0.02em" }}>
-          {part.name}
-        </h2>
+    <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: "#fff" }}>
+      {/* Header band */}
+      <div
+        style={{
+          padding: "24px 40px",
+          borderBottom: "1px solid #F1F5F9",
+          display: "flex",
+          alignItems: "flex-start",
+          gap: 16,
+          position: "sticky",
+          top: 0,
+          background: "#fff",
+          zIndex: 1,
+        }}
+      >
+        <div
+          style={{
+            width: 46,
+            height: 46,
+            borderRadius: 13,
+            background: GRADIENT,
+            flexShrink: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 14,
+            fontWeight: 700,
+            color: "#fff",
+            letterSpacing: "0.01em",
+          }}
+        >
+          {initials(part.name)}
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <h2 style={{ fontSize: 19, fontWeight: 700, color: "#1E1B4B", margin: 0, letterSpacing: "-0.02em" }}>
+              {part.name}
+            </h2>
+            <span
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                gap: 6,
+                padding: "3px 10px",
+                borderRadius: 999,
+                fontSize: 11.5,
+                fontWeight: 600,
+                background: health.bg,
+                color: health.text,
+                border: `1px solid ${health.border}`,
+              }}
+            >
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: health.dot }} />
+              {health.label}
+            </span>
+          </div>
+          <p style={{ margin: "4px 0 0", fontSize: 12.5, color: "#9CA3AF" }}>
+            {part.partNumber || "No part number"} {part.category ? `· ${part.category}` : ""}
+          </p>
+        </div>
+
         <button
           onClick={handleDelete}
           disabled={deleting}
           title="Delete part"
           style={{
-            border: "none",
-            background: "transparent",
+            border: "1px solid #FEE2E2",
+            background: "#FEF2F2",
             color: "#DC2626",
             cursor: "pointer",
-            padding: 4,
+            padding: "8px 10px",
+            borderRadius: 10,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            fontSize: 12.5,
+            fontWeight: 600,
+            flexShrink: 0,
           }}
         >
-          <i className="ti ti-trash" style={{ fontSize: 16 }} aria-hidden="true" />
+          <i className="ti ti-trash" style={{ fontSize: 14 }} aria-hidden="true" />
+          Delete
         </button>
       </div>
-      <p style={{ margin: "0 0 16px", fontSize: 12.5, color: "#9CA3AF" }}>
-        {part.partNumber || "No part number"} {part.category ? `· ${part.category}` : ""}
-      </p>
 
-      <span
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 6,
-          padding: "4px 10px",
-          borderRadius: 999,
-          fontSize: 12,
-          fontWeight: 600,
-          background: health.bg,
-          color: health.text,
-          border: `1px solid ${health.border}`,
-          marginBottom: 20,
-        }}
-      >
-        <span style={{ width: 6, height: 6, borderRadius: "50%", background: health.dot }} />
-        {health.label} — {part.quantityOnHand} {part.unitOfMeasure} on hand (min {part.minQuantity})
-      </span>
-
-      {/* Info grid */}
+      {/* Stat strip */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "1fr 1fr",
-          gap: 12,
-          padding: 16,
-          background: "#F8FAFF",
-          borderRadius: 12,
-          marginBottom: 20,
+          gridTemplateColumns: "repeat(4, 1fr)",
+          gap: 1,
+          background: "#F1F5F9",
+          borderBottom: "1px solid #F1F5F9",
         }}
       >
-        <Field label="Unit cost" value={formatCurrency(part.unitCost)} />
-        <Field label="Reorder qty" value={part.reorderQuantity ? String(part.reorderQuantity) : "—"} />
-        <Field label="Vendor" value={part.vendor || "—"} />
-        <Field label="Vendor part #" value={part.vendorPartNumber || "—"} />
-        <Field label="Location" value={part.location || "—"} />
-        <Field label="Barcode" value={part.barcode || "—"} />
+        <StatCell label="On hand" value={`${part.quantityOnHand} ${part.unitOfMeasure}`} accent={health.text} />
+        <StatCell label="Minimum" value={String(part.minQuantity)} />
+        <StatCell label="Unit cost" value={formatCurrency(part.unitCost)} />
+        <StatCell label="Stock value" value={formatCurrency(stockValue)} />
       </div>
 
-      {part.description && (
-        <p style={{ fontSize: 13, color: "#4B5563", marginBottom: 20, lineHeight: 1.5 }}>{part.description}</p>
-      )}
-
-      {/* Stock actions */}
-      <SectionTitle>Stock actions</SectionTitle>
-      <div style={{ display: "flex", flexDirection: "column", gap: 10, marginBottom: 20 }}>
-        <StockActionRow
-          icon="ti-square-plus"
-          placeholder="Qty to add"
-          value={restockQty}
-          onChange={setRestockQty}
-          onSubmit={handleRestock}
-          loading={restocking}
-          label="Restock"
-          color="#16A34A"
-        />
-        <StockActionRow
-          icon="ti-square-minus"
-          placeholder="Qty to consume"
-          value={consumeQty}
-          onChange={setConsumeQty}
-          onSubmit={handleConsume}
-          loading={consuming}
-          label="Consume"
-          color="#DC2626"
-        />
-        <StockActionRow
-          icon="ti-adjustments"
-          placeholder="New count"
-          value={adjustQty}
-          onChange={setAdjustQty}
-          onSubmit={handleAdjust}
-          loading={adjusting}
-          label="Adjust"
-          color="#6366F1"
-        />
-      </div>
-
-      {/* Linked equipment */}
-      <SectionTitle>Linked equipment</SectionTitle>
-      <div style={{ display: "flex", flexDirection: "column", gap: 6, marginBottom: 12 }}>
-        {part.linkedEquipmentIds.length === 0 && (
-          <p style={{ fontSize: 12.5, color: "#9CA3AF", margin: 0 }}>No equipment linked yet.</p>
-        )}
-        {part.linkedEquipmentIds.map((eqId) => {
-          const eq = equipmentOptions.find((e) => e.id === eqId);
-          return (
+      {/* Two-column body — makes use of the full available width */}
+      <div
+        style={{
+          padding: "28px 40px 48px",
+          display: "grid",
+          gridTemplateColumns: "minmax(0, 1.3fr) minmax(0, 1fr)",
+          gap: 40,
+          alignItems: "start",
+        }}
+      >
+        {/* Left column */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 28, minWidth: 0 }}>
+          <div>
+            <SectionTitle>Details</SectionTitle>
             <div
-              key={eqId}
               style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "8px 10px",
+                display: "grid",
+                gridTemplateColumns: "repeat(3, 1fr)",
+                gap: 14,
+                padding: 18,
                 background: "#F8FAFF",
-                borderRadius: 8,
-                fontSize: 12.5,
+                border: "1px solid #EEF2FF",
+                borderRadius: 14,
               }}
             >
-              <span>{eq?.name ?? `Equipment #${eqId}`}</span>
-              <button
-                onClick={() => unlinkEquipment({ id: part.id, equipmentId: eqId })}
-                style={{ border: "none", background: "transparent", color: "#DC2626", cursor: "pointer" }}
-              >
-                <i className="ti ti-x" style={{ fontSize: 13 }} aria-hidden="true" />
-              </button>
+              <Field label="Reorder qty" value={part.reorderQuantity ? String(part.reorderQuantity) : "—"} />
+              <Field label="Vendor" value={part.vendor || "—"} />
+              <Field label="Vendor part #" value={part.vendorPartNumber || "—"} />
+              <Field label="Location" value={part.location || "—"} />
+              <Field label="Barcode" value={part.barcode || "—"} />
+              <Field label="Unit" value={part.unitOfMeasure} />
             </div>
-          );
-        })}
-      </div>
-      <div style={{ display: "flex", gap: 8, marginBottom: 24 }}>
-        <select
-          value={equipmentToLink}
-          onChange={(e) => setEquipmentToLink(e.target.value)}
-          style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: "1px solid #E5E7EB", fontSize: 12.5 }}
-        >
-          <option value="">Select equipment…</option>
-          {equipmentOptions
-            .filter((e) => !part.linkedEquipmentIds.includes(e.id))
-            .map((e) => (
-              <option key={e.id} value={e.id}>
-                {e.name}
-              </option>
-            ))}
-        </select>
-        <button
-          onClick={handleLink}
-          disabled={!equipmentToLink}
-          style={{
-            padding: "8px 14px",
-            borderRadius: 8,
-            border: "none",
-            background: "#EEF2FF",
-            color: "#4338CA",
-            fontSize: 12.5,
-            fontWeight: 600,
-            cursor: "pointer",
-          }}
-        >
-          Link
-        </button>
-      </div>
+            {part.description && (
+              <p style={{ fontSize: 13, color: "#4B5563", marginTop: 14, lineHeight: 1.6 }}>{part.description}</p>
+            )}
+          </div>
 
-      {/* Stock history */}
-      <SectionTitle>Stock history</SectionTitle>
-      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-        {history.length === 0 && (
-          <p style={{ fontSize: 12.5, color: "#9CA3AF", margin: 0 }}>No stock movements yet.</p>
-        )}
-        {history.map((m) => (
-          <div
-            key={m._id}
-            style={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-              padding: "8px 10px",
-              borderBottom: "1px solid #F1F5F9",
-              fontSize: 12.5,
-            }}
-          >
-            <div>
-              <p style={{ margin: 0, fontWeight: 600, color: "#1E1B4B", textTransform: "capitalize" }}>{m.type}</p>
-              <p style={{ margin: 0, color: "#9CA3AF" }}>{m.reason || "—"}</p>
-            </div>
-            <div style={{ textAlign: "right" }}>
-              <p style={{ margin: 0, fontWeight: 600, color: m.quantityDelta >= 0 ? "#16A34A" : "#DC2626" }}>
-                {m.quantityDelta >= 0 ? "+" : ""}
-                {m.quantityDelta}
-              </p>
-              <p style={{ margin: 0, color: "#9CA3AF" }}>{formatDate(m.createdAt)}</p>
+          <div>
+            <SectionTitle>Stock actions</SectionTitle>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <StockActionRow
+                icon="ti-square-plus"
+                placeholder="Qty to add"
+                value={restockQty}
+                onChange={setRestockQty}
+                onSubmit={handleRestock}
+                loading={restocking}
+                label="Restock"
+                color="#16A34A"
+              />
+              <StockActionRow
+                icon="ti-square-minus"
+                placeholder="Qty to consume"
+                value={consumeQty}
+                onChange={setConsumeQty}
+                onSubmit={handleConsume}
+                loading={consuming}
+                label="Consume"
+                color="#DC2626"
+              />
+              <StockActionRow
+                icon="ti-adjustments"
+                placeholder="New count"
+                value={adjustQty}
+                onChange={setAdjustQty}
+                onSubmit={handleAdjust}
+                loading={adjusting}
+                label="Adjust"
+                color="#6366F1"
+              />
             </div>
           </div>
-        ))}
+
+          <div>
+            <SectionTitle>Stock history</SectionTitle>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                border: "1px solid #F1F5F9",
+                borderRadius: 14,
+                overflow: "hidden",
+              }}
+            >
+              {history.length === 0 && (
+                <p style={{ fontSize: 12.5, color: "#9CA3AF", margin: 0, padding: 16 }}>No stock movements yet.</p>
+              )}
+              {history.map((m, i) => (
+                <div
+                  key={m._id}
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    padding: "12px 16px",
+                    borderTop: i === 0 ? "none" : "1px solid #F1F5F9",
+                    fontSize: 12.5,
+                  }}
+                >
+                  <div>
+                    <p style={{ margin: 0, fontWeight: 600, color: "#1E1B4B", textTransform: "capitalize" }}>
+                      {m.type}
+                    </p>
+                    <p style={{ margin: 0, color: "#9CA3AF" }}>{m.reason || "—"}</p>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <p style={{ margin: 0, fontWeight: 600, color: m.quantityDelta >= 0 ? "#16A34A" : "#DC2626" }}>
+                      {m.quantityDelta >= 0 ? "+" : ""}
+                      {m.quantityDelta}
+                    </p>
+                    <p style={{ margin: 0, color: "#9CA3AF" }}>{formatDate(m.createdAt)}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Right column */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 28, minWidth: 0 }}>
+          <div>
+            <SectionTitle>Linked equipment</SectionTitle>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                gap: 8,
+                marginBottom: 12,
+              }}
+            >
+              {part.linkedEquipmentIds.length === 0 && (
+                <div
+                  style={{
+                    padding: 16,
+                    border: "1px dashed #E5E7EB",
+                    borderRadius: 12,
+                    textAlign: "center",
+                  }}
+                >
+                  <p style={{ fontSize: 12.5, color: "#9CA3AF", margin: 0 }}>No equipment linked yet.</p>
+                </div>
+              )}
+              {part.linkedEquipmentIds.map((eqId) => {
+                const eq = equipmentOptions.find((e) => e.id === eqId);
+                return (
+                  <div
+                    key={eqId}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "10px 12px",
+                      background: "#F8FAFF",
+                      border: "1px solid #EEF2FF",
+                      borderRadius: 10,
+                      fontSize: 12.5,
+                    }}
+                  >
+                    <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <i className="ti ti-tool" style={{ fontSize: 13, color: "#6366F1" }} aria-hidden="true" />
+                      {eq?.name ?? `Equipment #${eqId}`}
+                    </span>
+                    <button
+                      onClick={() => unlinkEquipment({ id: part.id, equipmentId: eqId })}
+                      style={{ border: "none", background: "transparent", color: "#9CA3AF", cursor: "pointer" }}
+                    >
+                      <i className="ti ti-x" style={{ fontSize: 13 }} aria-hidden="true" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <select
+                value={equipmentToLink}
+                onChange={(e) => setEquipmentToLink(e.target.value)}
+                style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: "1px solid #E5E7EB", fontSize: 12.5 }}
+              >
+                <option value="">Select equipment…</option>
+                {equipmentOptions
+                  .filter((e) => !part.linkedEquipmentIds.includes(e.id))
+                  .map((e) => (
+                    <option key={e.id} value={e.id}>
+                      {e.name}
+                    </option>
+                  ))}
+              </select>
+              <button
+                onClick={handleLink}
+                disabled={!equipmentToLink}
+                style={{
+                  padding: "8px 14px",
+                  borderRadius: 8,
+                  border: "none",
+                  background: equipmentToLink ? "#EEF2FF" : "#F3F4F6",
+                  color: equipmentToLink ? "#4338CA" : "#9CA3AF",
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  cursor: equipmentToLink ? "pointer" : "default",
+                }}
+              >
+                Link
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
+    </div>
+  );
+}
+
+function StatCell({ label, value, accent }: { label: string; value: string; accent?: string }) {
+  return (
+    <div style={{ background: "#fff", padding: "14px 20px" }}>
+      <p style={{ margin: "0 0 4px", fontSize: 10.5, color: "#9CA3AF", textTransform: "uppercase", letterSpacing: "0.04em" }}>
+        {label}
+      </p>
+      <p style={{ margin: 0, fontSize: 15, fontWeight: 700, color: accent ?? "#1E1B4B" }}>{value}</p>
     </div>
   );
 }
