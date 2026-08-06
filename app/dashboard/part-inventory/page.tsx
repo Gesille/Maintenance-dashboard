@@ -8,7 +8,16 @@ import { useGetAllCategoriesQuery } from "@/redux/Category/Categoryapi";
 import { useGetAllEquipmentQuery } from "@/redux/Equipment/Equipmentapi";
 
 import { Part, EMPTY_PART_FORM } from "@/types/Part";
-import { useAdjustPartQuantityMutation, useConsumePartMutation, useDeletePartMutation, useGetAllPartsQuery, useGetPartStockHistoryQuery, useLinkPartToEquipmentMutation, useRestockPartMutation, useUnlinkPartFromEquipmentMutation } from "@/redux/part/Partapi";
+import { CreatePartInput, useAdjustPartQuantityMutation,
+     useConsumePartMutation, 
+     useCreatePartMutation, 
+     useDeletePartMutation, 
+     useGetAllPartsQuery, 
+     useGetPartStockHistoryQuery,
+      useLinkPartToEquipmentMutation, 
+      useRestockPartMutation, 
+      useUnlinkPartFromEquipmentMutation 
+    } from "@/redux/part/Partapi";
 
 
 const STOCK_HEALTH = {
