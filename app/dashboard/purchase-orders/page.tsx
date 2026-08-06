@@ -19,6 +19,8 @@ import {
   Loader,
   AlertCircle,
   ShoppingCart,
+  Package,
+  PackagePlus,
 } from "lucide-react";
 import {
   PurchaseOrderStatus,
@@ -38,6 +40,8 @@ import {
   FulfillItemInput,
 } from "@/redux/purchase-orders/Purchaseorderapi";
 import { WorkOrderSidebar } from "@/component/Sidebar";
+import { useGetAllPartsQuery } from "@/redux/Part/Partapi";
+import { Part } from "@/types/Part";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tokens — same indigo/violet language as the Work Orders / Support Tickets pages
@@ -758,6 +762,232 @@ function DrawerShell({
   );
 }
 
+
+type LineMode = "search" | "oneoff";
+
+function PartLineItemRow({
+  item,
+  index,
+  onChange,
+  onRemove,
+}: {
+  item: LineItemInput;
+  index: number;
+  onChange: (index: number, patch: Partial<LineItemInput>) => void;
+  onRemove: (index: number) => void;
+}) {
+  // If the row already has a partId, it's a resolved Part.
+  // If it has a partName but no partId, it's an existing one-off line (editing).
+  const [mode, setMode] = useState<LineMode>(item.partId ? "search" : item.partName ? "oneoff" : "search");
+  const [selectedName, setSelectedName] = useState<string>(item.partId ? item.partName ?? "" : "");
+  const [selectedMeta, setSelectedMeta] = useState<{ partNumber: string | null; qtyOnHand: number; unit: string } | null>(null);
+  const [query, setQuery] = useState("");
+  const [open, setOpen] = useState(false);
+
+  const { data, isFetching } = useGetAllPartsQuery(
+    { search: query },
+    { skip: query.trim().length < 2 },
+  );
+  const results: Part[] = data?.data ?? [];
+
+  function selectPart(p: Part) {
+    onChange(index, { partId: p.id, partName: p.name, unitCost: p.unitCost });
+    setSelectedName(p.name);
+    setSelectedMeta({ partNumber: p.partNumber, qtyOnHand: p.quantityOnHand, unit: p.unitOfMeasure });
+    setQuery("");
+    setOpen(false);
+  }
+
+  function clearSelection() {
+    onChange(index, { partId: undefined, partName: "", unitCost: 0 });
+    setSelectedName("");
+    setSelectedMeta(null);
+  }
+
+  function switchToOneOff(prefill?: string) {
+    clearSelection();
+    setMode("oneoff");
+    if (prefill) onChange(index, { partName: prefill });
+  }
+
+  return (
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "1fr 84px 100px 28px",
+        alignItems: "start",
+        gap: 8,
+      }}
+    >
+      {/* Column 1: either the resolved part chip, the one-off text field, or the search box */}
+      <div style={{ position: "relative" }}>
+        {item.partId ? (
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              gap: 8,
+              padding: "9px 10px",
+              borderRadius: 9,
+              border: "1.5px solid #C7D2FE",
+              background: "#EEF2FF",
+            }}
+          >
+            <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+              <Package size={14} color="#4338CA" style={{ flexShrink: 0 }} />
+              <div style={{ minWidth: 0 }}>
+                <div style={{ fontSize: 12.5, fontWeight: 700, color: "#3730A3", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                  {selectedName || item.partName}
+                </div>
+                {selectedMeta && (
+                  <div style={{ fontSize: 10.5, color: "#6366F1" }}>
+                    {selectedMeta.partNumber ?? "No part #"} · {selectedMeta.qtyOnHand} {selectedMeta.unit} in stock
+                  </div>
+                )}
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={clearSelection}
+              style={{ background: "none", border: "none", cursor: "pointer", color: "#6366F1", flexShrink: 0, display: "flex" }}
+            >
+              <X size={13} />
+            </button>
+          </div>
+        ) : mode === "oneoff" ? (
+          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+            <input
+              value={item.partName ?? ""}
+              onChange={(e) => onChange(index, { partName: e.target.value })}
+              placeholder="One-off item name"
+              style={inputStyle}
+              autoFocus
+            />
+            <button
+              type="button"
+              onClick={() => { setMode("search"); onChange(index, { partName: "" }); }}
+              title="Search inventory instead"
+              style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", flexShrink: 0, display: "flex" }}
+            >
+              <Search size={14} />
+            </button>
+          </div>
+        ) : (
+          <>
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                background: "#FAFBFF",
+                border: "1.5px solid #E8EAFF",
+                borderRadius: 9,
+                padding: "0 12px",
+                height: 36,
+              }}
+            >
+              <Search size={13} color="#A5B4FC" />
+              <input
+                value={query}
+                onChange={(e) => { setQuery(e.target.value); setOpen(true); }}
+                onFocus={() => setOpen(true)}
+                onBlur={() => setTimeout(() => setOpen(false), 150)}
+                placeholder="Search parts by name or #…"
+                style={{ border: "none", background: "transparent", fontSize: 13, outline: "none", width: "100%" }}
+              />
+            </div>
+
+            {open && query.trim().length >= 2 && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: "calc(100% + 4px)",
+                  left: 0,
+                  right: 0,
+                  zIndex: 30,
+                  background: "#fff",
+                  border: "1px solid #E8EAFF",
+                  borderRadius: 10,
+                  boxShadow: "0 12px 32px rgba(15,23,42,0.14)",
+                  maxHeight: 240,
+                  overflowY: "auto",
+                }}
+              >
+                {isFetching && <div style={{ padding: 12, fontSize: 12, color: "#94A3B8" }}>Searching…</div>}
+
+                {!isFetching && results.length === 0 && (
+                  <button
+                    type="button"
+                    onMouseDown={() => switchToOneOff(query)}
+                    style={{
+                      display: "flex", alignItems: "center", gap: 8, width: "100%",
+                      padding: "12px", border: "none", background: "none", cursor: "pointer", textAlign: "left",
+                    }}
+                  >
+                    <PackagePlus size={14} color="#6366F1" />
+                    <span style={{ fontSize: 12.5 }}>
+                      No matching parts — add <strong>&quot;{query}&quot;</strong> as a one-off item
+                    </span>
+                  </button>
+                )}
+
+                {results.map((p) => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onMouseDown={() => selectPart(p)}
+                    style={{
+                      display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%",
+                      padding: "10px 12px", border: "none", background: "none", textAlign: "left", cursor: "pointer",
+                      borderBottom: "1px solid #F0F4FF",
+                    }}
+                  >
+                    <span style={{ minWidth: 0 }}>
+                      <div style={{ fontSize: 13, fontWeight: 600, color: "#0F172A" }}>{p.name}</div>
+                      <div style={{ fontSize: 11, color: "#94A3B8" }}>
+                        {p.partNumber ?? "No part #"} · {p.quantityOnHand} {p.unitOfMeasure} on hand
+                        {p.isLowStock && <span style={{ color: "#DC2626", fontWeight: 700 }}> · low stock</span>}
+                      </div>
+                    </span>
+                    <span style={{ fontSize: 12, fontWeight: 700, color: "#6366F1", flexShrink: 0 }}>
+                      {p.unitCost.toLocaleString(undefined, { style: "currency", currency: "USD" })}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      <input
+        type="number"
+        min={1}
+        value={item.quantityOrdered}
+        onChange={(e) => onChange(index, { quantityOrdered: Number(e.target.value) })}
+        style={inputStyle}
+        placeholder="Qty"
+      />
+      <input
+        type="number"
+        min={0}
+        step="0.01"
+        value={item.unitCost ?? 0}
+        onChange={(e) => onChange(index, { unitCost: Number(e.target.value) })}
+        style={inputStyle}
+        placeholder="Unit cost"
+      />
+      <button
+        type="button"
+        onClick={() => onRemove(index)}
+        style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", padding: 4, borderRadius: 6 }}
+      >
+        <X size={14} />
+      </button>
+    </div>
+  );
+}
 // ─────────────────────────────────────────────────────────────────────────────
 // Create / edit drawer
 // ─────────────────────────────────────────────────────────────────────────────
@@ -858,42 +1088,17 @@ function PurchaseOrderFormDrawer({
             + Add item
           </button>
         </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-          {form.items.map((item, i) => (
-            <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 84px 100px 28px", alignItems: "center", gap: 8 }}>
-              <input
-                value={item.partName ?? ""}
-                onChange={(e) => updateItem(i, { partName: e.target.value })}
-                placeholder="Part name (or one-off item)"
-                style={inputStyle}
-              />
-              <input
-                type="number"
-                min={1}
-                value={item.quantityOrdered}
-                onChange={(e) => updateItem(i, { quantityOrdered: Number(e.target.value) })}
-                style={inputStyle}
-                placeholder="Qty"
-              />
-              <input
-                type="number"
-                min={0}
-                step="0.01"
-                value={item.unitCost ?? 0}
-                onChange={(e) => updateItem(i, { unitCost: Number(e.target.value) })}
-                style={inputStyle}
-                placeholder="Unit cost"
-              />
-              <button
-                type="button"
-                onClick={() => removeItem(i)}
-                style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", padding: 4, borderRadius: 6 }}
-              >
-                <X size={14} />
-              </button>
-            </div>
-          ))}
-        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+  {form.items.map((item, i) => (
+    <PartLineItemRow
+      key={i}
+      item={item}
+      index={i}
+      onChange={updateItem}
+      onRemove={removeItem}
+    />
+  ))}
+</div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 18 }}>
