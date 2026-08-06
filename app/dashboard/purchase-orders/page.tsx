@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { JSX, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useSelector } from "react-redux";
 import {
   Plus,
@@ -548,6 +548,7 @@ export default function PurchaseOrdersPage() {
 
 
 import { useRef } from "react";
+import { createPortal } from "react-dom";
 
 function RowActions({
   po,
@@ -581,10 +582,6 @@ function RowActions({
     setOpen((v) => !v);
   }
 
-  function createPortal(arg0: JSX.Element, body: HTMLElement): import("react").ReactNode {
-    throw new Error("Function not implemented.");
-  }
-
   return (
     <div style={{ position: "relative", display: "flex", justifyContent: "flex-end" }}>
       <button
@@ -594,7 +591,7 @@ function RowActions({
       >
         <ChevronDown size={15} />
       </button>
-{/*  */}
+
       {open && coords &&
         createPortal(
           <>
