@@ -198,7 +198,7 @@ function StatChip({
 
 export default function PurchaseOrdersPage() {
   const user = useSelector((state: any) => state.auth?.user);
-  const isAdmin = user?.role === "manager";
+  const isAdmin = user?.role === "Enduser"; 
 
   const [statusFilter, setStatusFilter] = useState<PurchaseOrderStatus | "all">("all");
   const [search, setSearch] = useState("");
@@ -807,12 +807,13 @@ function DrawerShell({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Part line-item row — search & select from real inventory, with an
-// explicit "one-off item" fallback. This is what makes the PO form actually
-// pick from parts instead of accepting arbitrary free text.
-// ─────────────────────────────────────────────────────────────────────────────
 
+function formatDate(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+}
 type LineMode = "search" | "oneoff";
 
 function PartLineItemRow({
@@ -1115,23 +1116,27 @@ function PurchaseOrderFormDrawer({
         </Field>
       </div>
 
-      <div style={{ marginBottom: 18 }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
-          <span style={fieldLabelStyle}>Line items</span>
-          <button
-            type="button"
-            onClick={addItem}
-            style={{ fontSize: 12, fontWeight: 600, color: "#6366F1", background: "none", border: "none", cursor: "pointer" }}
-          >
-            + Add item
-          </button>
-        </div>
-        <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-          {form.items.map((item, i) => (
-            <PartLineItemRow key={i} item={item} index={i} onChange={updateItem} onRemove={removeItem} />
-          ))}
-        </div>
-      </div>
+ <div style={{ marginBottom: 18 }}>
+  <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+    <span style={fieldLabelStyle}>Line items</span>
+    <button type="button" onClick={addItem} style={{ fontSize: 12, fontWeight: 600, color: "#6366F1", background: "none", border: "none", cursor: "pointer" }}>
+      + Add item
+    </button>
+  </div>
+
+  <div style={{ display: "grid", gridTemplateColumns: "1fr 84px 100px 28px", gap: 8, marginBottom: 6, padding: "0 2px" }}>
+    <span style={{ fontSize: 10, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em" }}>Item</span>
+    <span style={{ fontSize: 10, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em" }}>Qty</span>
+    <span style={{ fontSize: 10, fontWeight: 700, color: "#94A3B8", textTransform: "uppercase", letterSpacing: "0.06em" }}>Unit cost</span>
+    <span />
+  </div>
+
+  <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+    {form.items.map((item, i) => (
+      <PartLineItemRow key={i} item={item} index={i} onChange={updateItem} onRemove={removeItem} />
+    ))}
+  </div>
+</div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 18 }}>
         <Field label="Tax amount">
@@ -1147,7 +1152,7 @@ function PurchaseOrderFormDrawer({
         <Field label="Expected delivery">
           <input
             type="date"
-            value={form.expectedDeliveryDate ?? ""}
+            value={form.expectedDeliveryDate ? form.expectedDeliveryDate.slice(0, 10) : ""}
             onChange={(e) => setForm((f) => ({ ...f, expectedDeliveryDate: e.target.value || null }))}
             style={inputStyle}
           />
@@ -1217,7 +1222,7 @@ function PurchaseOrderDrawer({
         </div>
         <div>
           <div style={fieldLabelStyle}>Expected delivery</div>
-          <div style={{ fontSize: 13, color: "#0F172A" }}>{po.expectedDeliveryDate ?? "—"}</div>
+          <div style={{ fontSize: 13, color: "#0F172A" }}>{formatDate(po.expectedDeliveryDate)}</div>
         </div>
       </div>
 
