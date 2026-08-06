@@ -44,7 +44,7 @@ import { useGetAllPartsQuery } from "@/redux/Part/Partapi";
 import { Part } from "@/types/Part";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Tokens — same indigo/violet language as the Work Orders / Support Tickets pages
+// Tokens
 // ─────────────────────────────────────────────────────────────────────────────
 
 const PO_STATUS_CONFIG: Record<
@@ -69,6 +69,17 @@ const STATUS_ORDER: PurchaseOrderStatus[] = [
   "declined",
   "cancelled",
 ];
+
+// Column templates live in ONE place so the header and every row always
+// agree on how many cells exist. This is what was broken before: the
+// non-admin row rendered 7 cells against a 6-column template, so the last
+// cell (the chevron) wrapped onto a phantom second row instead of sitting
+// at the end of the row.
+function gridTemplate(isAdmin: boolean) {
+  return isAdmin
+    ? "1fr 1.6fr 1.3fr 0.7fr 0.9fr 1.3fr 0.4fr 0.4fr" // PO#, Vendor, Status, Items, Total, Requested by, Actions, Chevron
+    : "1fr 1.6fr 1.3fr 0.7fr 1.3fr 0.4fr"; // PO#, Vendor, Status, Items, Requested by, Chevron
+}
 
 function currency(n: number | undefined) {
   if (n === undefined) return "—";
@@ -202,8 +213,6 @@ export default function PurchaseOrdersPage() {
     search: search || undefined,
   });
 
-  // Unfiltered set, purely to drive the status chip counts (mirrors the
-  // Support Tickets page pattern — RTK Query dedupes this against the cache).
   const { data: allData } = useGetAllPurchaseOrdersQuery({});
 
   const [deletePurchaseOrder] = useDeletePurchaseOrderMutation();
@@ -229,6 +238,9 @@ export default function PurchaseOrdersPage() {
     for (const po of allOrders) base[po.status]++;
     return base;
   }, [allOrders]);
+
+  const pendingApprovalCount = counts.requested;
+  const columns = gridTemplate(isAdmin);
 
   if (isLoading) {
     return (
@@ -344,6 +356,37 @@ export default function PurchaseOrdersPage() {
             </div>
           </div>
 
+          {/* Manager-only: pending approval callout, same treatment as the
+              low-stock banner on the Parts page, so it can't be missed. */}
+          {isAdmin && pendingApprovalCount > 0 && (
+            <button
+              onClick={() => setStatusFilter("requested")}
+              style={{
+                width: "100%",
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                gap: 8,
+                padding: "10px 14px",
+                marginBottom: 14,
+                borderRadius: 10,
+                border: "1px solid #FDE68A",
+                background: "#FFFBEB",
+                cursor: "pointer",
+                textAlign: "left",
+                boxSizing: "border-box",
+              }}
+            >
+              <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, fontWeight: 700, color: "#B45309" }}>
+                <AlertCircle size={14} />
+                {pendingApprovalCount} {pendingApprovalCount === 1 ? "request needs" : "requests need"} your approval
+              </span>
+              <span style={{ fontSize: 11.5, fontWeight: 700, color: "#B45309", textDecoration: statusFilter === "requested" ? "none" : "underline" }}>
+                {statusFilter === "requested" ? "Showing" : "Review now"}
+              </span>
+            </button>
+          )}
+
           {/* Status filter chips */}
           <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
             <StatChip label="All" value={counts.all} active={statusFilter === "all"} onClick={() => setStatusFilter("all")} />
@@ -395,7 +438,7 @@ export default function PurchaseOrdersPage() {
               <div
                 style={{
                   display: "grid",
-                  gridTemplateColumns: isAdmin ? "1fr 1.6fr 1.3fr 0.7fr 0.9fr 1.3fr 0.4fr 0.4fr" : "1fr 1.6fr 1.3fr 0.7fr 1.3fr 0.4fr",
+                  gridTemplateColumns: columns,
                   padding: "12px 20px",
                   background: "#FAFBFF",
                   borderBottom: "1px solid #E8EAFF",
@@ -417,7 +460,7 @@ export default function PurchaseOrdersPage() {
                   onClick={() => setDetailPO(po)}
                   style={{
                     display: "grid",
-                    gridTemplateColumns: isAdmin ? "1fr 1.6fr 1.3fr 0.7fr 0.9fr 1.3fr 0.4fr 0.4fr" : "1fr 1.6fr 1.3fr 0.7fr 1.3fr 0.4fr",
+                    gridTemplateColumns: columns,
                     alignItems: "center",
                     padding: "14px 20px",
                     borderBottom: "1px solid #F0F4FF",
@@ -441,19 +484,23 @@ export default function PurchaseOrdersPage() {
                       {po.createdByName}
                     </span>
                   </div>
-                  <div onClick={(e) => e.stopPropagation()}>
-                    <RowActions
-                      po={po}
-                      isAdmin={isAdmin}
-                      onEdit={() => setEditingPO(po)}
-                      onDelete={() => deletePurchaseOrder(po.id)}
-                      onApprove={() => approvePurchaseOrder(po.id)}
-                      onDecline={() => setDeclinePOId(po.id)}
-                      onMarkOrdered={() => markAsOrdered(po.id)}
-                      onCancel={() => cancelPurchaseOrder(po.id)}
-                      onFulfill={() => setFulfillPO(po)}
-                    />
-                  </div>
+                  {/* Actions column only exists in the grid for admins now —
+                      matches the header, which only has 8 labels (incl. two
+                      blanks) for admins and 6 for everyone else. */}
+                  {isAdmin && (
+                    <div onClick={(e) => e.stopPropagation()}>
+                      <RowActions
+                        po={po}
+                        onEdit={() => setEditingPO(po)}
+                        onDelete={() => deletePurchaseOrder(po.id)}
+                        onApprove={() => approvePurchaseOrder(po.id)}
+                        onDecline={() => setDeclinePOId(po.id)}
+                        onMarkOrdered={() => markAsOrdered(po.id)}
+                        onCancel={() => cancelPurchaseOrder(po.id)}
+                        onFulfill={() => setFulfillPO(po)}
+                      />
+                    </div>
+                  )}
                   <div style={{ textAlign: "right" }}>
                     <ChevronRight size={14} color="#CBD5E1" />
                   </div>
@@ -494,12 +541,13 @@ export default function PurchaseOrdersPage() {
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Row actions dropdown
+// Row actions dropdown — admin-only, so this component is now only ever
+// mounted when isAdmin is true (see the conditional render above). No more
+// "return null but still take up a grid cell" bug.
 // ─────────────────────────────────────────────────────────────────────────────
 
 function RowActions({
   po,
-  isAdmin,
   onEdit,
   onDelete,
   onApprove,
@@ -509,7 +557,6 @@ function RowActions({
   onFulfill,
 }: {
   po: PurchaseOrderListItem;
-  isAdmin: boolean;
   onEdit: () => void;
   onDelete: () => void;
   onApprove: () => void;
@@ -520,8 +567,6 @@ function RowActions({
 }) {
   const [open, setOpen] = useState(false);
   const canCancel = !po.items.some((i) => i.quantityFulfilled > 0);
-
-  if (!isAdmin) return null;
 
   return (
     <div style={{ position: "relative", display: "flex", justifyContent: "flex-end" }}>
@@ -707,7 +752,7 @@ function SecondaryButton({ children, onClick }: { children: React.ReactNode; onC
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Slide-in drawer shell (matches the Support Tickets drawer)
+// Slide-in drawer shell
 // ─────────────────────────────────────────────────────────────────────────────
 
 function DrawerShell({
@@ -762,6 +807,11 @@ function DrawerShell({
   );
 }
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Part line-item row — search & select from real inventory, with an
+// explicit "one-off item" fallback. This is what makes the PO form actually
+// pick from parts instead of accepting arbitrary free text.
+// ─────────────────────────────────────────────────────────────────────────────
 
 type LineMode = "search" | "oneoff";
 
@@ -776,10 +826,7 @@ function PartLineItemRow({
   onChange: (index: number, patch: Partial<LineItemInput>) => void;
   onRemove: (index: number) => void;
 }) {
-  // If the row already has a partId, it's a resolved Part.
-  // If it has a partName but no partId, it's an existing one-off line (editing).
   const [mode, setMode] = useState<LineMode>(item.partId ? "search" : item.partName ? "oneoff" : "search");
-  const [selectedName, setSelectedName] = useState<string>(item.partId ? item.partName ?? "" : "");
   const [selectedMeta, setSelectedMeta] = useState<{ partNumber: string | null; qtyOnHand: number; unit: string } | null>(null);
   const [query, setQuery] = useState("");
   const [open, setOpen] = useState(false);
@@ -792,7 +839,6 @@ function PartLineItemRow({
 
   function selectPart(p: Part) {
     onChange(index, { partId: p.id, partName: p.name, unitCost: p.unitCost });
-    setSelectedName(p.name);
     setSelectedMeta({ partNumber: p.partNumber, qtyOnHand: p.quantityOnHand, unit: p.unitOfMeasure });
     setQuery("");
     setOpen(false);
@@ -800,7 +846,6 @@ function PartLineItemRow({
 
   function clearSelection() {
     onChange(index, { partId: undefined, partName: "", unitCost: 0 });
-    setSelectedName("");
     setSelectedMeta(null);
   }
 
@@ -811,15 +856,7 @@ function PartLineItemRow({
   }
 
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns: "1fr 84px 100px 28px",
-        alignItems: "start",
-        gap: 8,
-      }}
-    >
-      {/* Column 1: either the resolved part chip, the one-off text field, or the search box */}
+    <div style={{ display: "grid", gridTemplateColumns: "1fr 84px 100px 28px", alignItems: "start", gap: 8 }}>
       <div style={{ position: "relative" }}>
         {item.partId ? (
           <div
@@ -838,7 +875,7 @@ function PartLineItemRow({
               <Package size={14} color="#4338CA" style={{ flexShrink: 0 }} />
               <div style={{ minWidth: 0 }}>
                 <div style={{ fontSize: 12.5, fontWeight: 700, color: "#3730A3", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
-                  {selectedName || item.partName}
+                  {item.partName}
                 </div>
                 {selectedMeta && (
                   <div style={{ fontSize: 10.5, color: "#6366F1" }}>
@@ -927,7 +964,7 @@ function PartLineItemRow({
                   >
                     <PackagePlus size={14} color="#6366F1" />
                     <span style={{ fontSize: 12.5 }}>
-                      No matching parts — add <strong>&quot;{query}&quot;</strong> as a one-off item
+                      No matching parts — add &quot;{query}&quot; as a one-off item
                     </span>
                   </button>
                 )}
@@ -988,6 +1025,7 @@ function PartLineItemRow({
     </div>
   );
 }
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Create / edit drawer
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1089,16 +1127,10 @@ function PurchaseOrderFormDrawer({
           </button>
         </div>
         <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-  {form.items.map((item, i) => (
-    <PartLineItemRow
-      key={i}
-      item={item}
-      index={i}
-      onChange={updateItem}
-      onRemove={removeItem}
-    />
-  ))}
-</div>
+          {form.items.map((item, i) => (
+            <PartLineItemRow key={i} item={item} index={i} onChange={updateItem} onRemove={removeItem} />
+          ))}
+        </div>
       </div>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 18 }}>
