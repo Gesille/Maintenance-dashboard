@@ -22,8 +22,8 @@ import {
 } from "@/redux/Part/Partapi";
 
 // ─── Design tokens ──────────────────────────────────────────────────────────
-// Deliberately not a purple-gradient SaaS template: this is an operations
-// screen people scan quickly, so color is functional (status), not decorative.
+// Functional palette: color communicates status (in-stock / low / danger),
+// not decoration. Teal is the single primary accent, used sparingly.
 
 const COLOR = {
   bg: "#F7F8FA",
@@ -33,15 +33,16 @@ const COLOR = {
   textPrimary: "#14181F",
   textSecondary: "#667085",
   textTertiary: "#9CA3AF",
-  accent: "#2A6F63", // deep teal — used sparingly, for primary actions only
+  accent: "#2A6F63",
   accentSurface: "#EDF5F3",
+  accentBorder: "#BFDED6",
   danger: "#B42318",
   dangerSurface: "#FEF3F2",
   dangerBorder: "#FDA29B",
   success: "#067647",
   successSurface: "#ECFDF3",
   successBorder: "#ABEFC6",
-};
+} as const;
 
 const MONO =
   'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace';
@@ -83,7 +84,6 @@ function initials(name: string): string {
   );
 }
 
-
 export default function PartsInventoryPage() {
   const [search, setSearch] = useState("");
   const [category, setCategory] = useState<string>("");
@@ -97,8 +97,6 @@ export default function PartsInventoryPage() {
     lowStockOnly,
   });
 
-  // Independent of the active filters, so the low-stock count is always
-  // accurate even when the user is searching or filtering something else.
   const { data: lowStockData, refetch: refetchLowStock } = useGetAllPartsQuery({
     lowStockOnly: true,
   });
@@ -119,8 +117,6 @@ export default function PartsInventoryPage() {
 
   const handleSelect = useCallback((p: Part) => setSelectedId(p.id), []);
 
-  // Called by the detail panel / modal after any mutation succeeds, so the
-  // list and the low-stock banner both stay in sync without a manual reload.
   const handleDataChanged = useCallback(() => {
     refetch();
     refetchLowStock();
@@ -134,7 +130,6 @@ export default function PartsInventoryPage() {
     [handleDataChanged],
   );
 
-  // ── Loading state ──
   if (isLoading) {
     return (
       <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: COLOR.bg }}>
@@ -159,7 +154,6 @@ export default function PartsInventoryPage() {
     );
   }
 
-  // ── Error state ──
   if (isError) {
     return (
       <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: COLOR.bg }}>
@@ -192,7 +186,6 @@ export default function PartsInventoryPage() {
     );
   }
 
-  // ── Main layout ──
   return (
     <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: COLOR.bg }}>
       <WorkOrderSidebar />
@@ -248,6 +241,8 @@ function buttonStyle(variant: "primary" | "secondary" | "danger" | "ghost"): Rea
     fontWeight: 600,
     cursor: "pointer",
     border: "1px solid transparent",
+    whiteSpace: "nowrap",
+    flexShrink: 0,
   };
   switch (variant) {
     case "primary":
@@ -293,17 +288,19 @@ function PartListPanel({
   return (
     <div
       style={{
-        width: 380,
+        width: 340,
         flexShrink: 0,
         borderRight: `1px solid ${COLOR.border}`,
         display: "flex",
         flexDirection: "column",
         background: COLOR.surface,
+        minWidth: 0,
+        overflow: "hidden",
       }}
     >
-      <div style={{ padding: "20px 20px 14px", borderBottom: `1px solid ${COLOR.borderSubtle}` }}>
-        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-          <div>
+      <div style={{ padding: "20px 18px 14px", borderBottom: `1px solid ${COLOR.borderSubtle}` }}>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10, marginBottom: 14 }}>
+          <div style={{ minWidth: 0 }}>
             <h1 style={{ fontSize: 17, fontWeight: 700, color: COLOR.textPrimary, margin: 0 }}>Parts Inventory</h1>
             <p style={{ margin: "2px 0 0", fontSize: 12, color: COLOR.textTertiary }}>
               {parts.length} {parts.length === 1 ? "part" : "parts"} shown
@@ -315,7 +312,6 @@ function PartListPanel({
           </button>
         </div>
 
-        {/* Persistent low-stock alert — always visible, independent of filters */}
         {lowStockCount > 0 && (
           <button
             onClick={onLowStockToggle}
@@ -324,6 +320,7 @@ function PartListPanel({
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
+              gap: 8,
               padding: "10px 12px",
               marginBottom: 12,
               borderRadius: 8,
@@ -331,13 +328,16 @@ function PartListPanel({
               background: COLOR.dangerSurface,
               cursor: "pointer",
               textAlign: "left",
+              boxSizing: "border-box",
             }}
           >
-            <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, fontWeight: 600, color: COLOR.danger }}>
-              <i className="ti ti-alert-triangle" style={{ fontSize: 14 }} aria-hidden="true" />
-              {lowStockCount} {lowStockCount === 1 ? "part is" : "parts are"} below minimum
+            <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, fontWeight: 700, color: COLOR.danger, minWidth: 0 }}>
+              <i className="ti ti-alert-triangle" style={{ fontSize: 14, flexShrink: 0 }} aria-hidden="true" />
+              <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                {lowStockCount} {lowStockCount === 1 ? "part is" : "parts are"} low stock
+              </span>
             </span>
-            <span style={{ fontSize: 12, fontWeight: 600, color: COLOR.danger, textDecoration: lowStockOnly ? "none" : "underline" }}>
+            <span style={{ fontSize: 11.5, fontWeight: 700, color: COLOR.danger, textDecoration: lowStockOnly ? "none" : "underline", flexShrink: 0 }}>
               {lowStockOnly ? "Showing" : "View"}
             </span>
           </button>
@@ -372,6 +372,7 @@ function PartListPanel({
             onChange={(e) => onCategoryChange(e.target.value)}
             style={{
               flex: 1,
+              minWidth: 0,
               padding: "8px 10px",
               borderRadius: 8,
               border: `1px solid ${COLOR.border}`,
@@ -403,6 +404,7 @@ function PartListPanel({
               fontWeight: 600,
               cursor: "pointer",
               whiteSpace: "nowrap",
+              flexShrink: 0,
             }}
           >
             <i className="ti ti-filter" style={{ fontSize: 13 }} aria-hidden="true" />
@@ -411,7 +413,7 @@ function PartListPanel({
         </div>
       </div>
 
-      <div style={{ flex: 1, overflowY: "auto" }}>
+      <div style={{ flex: 1, overflowY: "auto", overflowX: "hidden" }}>
         {parts.length === 0 && (
           <div style={{ padding: "48px 24px", textAlign: "center" }}>
             <i className="ti ti-package-off" style={{ fontSize: 24, color: COLOR.textTertiary }} aria-hidden="true" />
@@ -430,16 +432,17 @@ function PartListPanel({
                 display: "block",
                 width: "100%",
                 textAlign: "left",
-                padding: "13px 20px 13px 17px",
+                padding: "13px 16px 13px 15px",
                 border: "none",
                 borderBottom: `1px solid ${COLOR.borderSubtle}`,
                 background: active ? COLOR.accentSurface : "transparent",
                 borderLeft: `3px solid ${active ? COLOR.accent : low ? health.dot : "transparent"}`,
                 cursor: "pointer",
+                boxSizing: "border-box",
               }}
             >
-              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
-                <div style={{ minWidth: 0 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8, minWidth: 0 }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
                   <p
                     style={{
                       margin: "0 0 3px",
@@ -453,7 +456,17 @@ function PartListPanel({
                   >
                     {p.name}
                   </p>
-                  <p style={{ margin: 0, fontSize: 12, color: COLOR.textTertiary, fontFamily: MONO }}>
+                  <p
+                    style={{
+                      margin: 0,
+                      fontSize: 12,
+                      color: COLOR.textTertiary,
+                      fontFamily: MONO,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
                     {p.partNumber || "No part #"} {p.category ? `· ${p.category}` : ""}
                   </p>
                 </div>
@@ -471,9 +484,10 @@ function PartListPanel({
                     background: health.bg,
                     color: health.text,
                     border: `1px solid ${health.border}`,
+                    whiteSpace: "nowrap",
                   }}
                 >
-                  {low && <span style={{ width: 5, height: 5, borderRadius: "50%", background: health.dot }} />}
+                  {low && <span style={{ width: 5, height: 5, borderRadius: "50%", background: health.dot, flexShrink: 0 }} />}
                   {p.quantityOnHand} {p.unitOfMeasure}
                 </span>
               </div>
@@ -485,7 +499,7 @@ function PartListPanel({
   );
 }
 
-// ─── Empty detail state (shown when nothing is selected) ─────────────────────
+// ─── Empty detail state ────────────────────────────────────────────────────────
 
 function EmptyDetailState() {
   return (
@@ -533,14 +547,13 @@ function PartDetailPanel({
   const [consumeQty, setConsumeQty] = useState("");
   const [adjustQty, setAdjustQty] = useState("");
   const [equipmentToLink, setEquipmentToLink] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const health = STOCK_HEALTH[stockHealth(part)];
+  const healthKey = stockHealth(part);
+  const health = STOCK_HEALTH[healthKey];
+  const isLow = healthKey === "low";
   const history = historyData?.data ?? [];
   const stockValue = part.unitCost * part.quantityOnHand;
-
-  // Every mutation below refetches both the stock history and the parent's
-  // parts list (and low-stock banner) on success, so quantities update
-  // immediately instead of waiting on a manual page reload.
 
   const handleRestock = async () => {
     const qty = Number(restockQty);
@@ -581,25 +594,38 @@ function PartDetailPanel({
   };
 
   const handleDelete = async () => {
-    if (!confirm(`Delete "${part.name}"? This can't be undone.`)) return;
+    if (!confirmDelete) {
+      setConfirmDelete(true);
+      return;
+    }
     await deletePart(part.id).unwrap();
     onDeleted(part.id);
   };
 
   return (
-    <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: COLOR.surface }}>
+    <div
+      style={{
+        flex: 1,
+        minWidth: 0,
+        maxWidth: "100%",
+        overflowY: "auto",
+        overflowX: "hidden",
+        background: COLOR.surface,
+      }}
+    >
       {/* Header band */}
       <div
         style={{
-          padding: "22px 40px",
+          padding: "20px 28px",
           borderBottom: `1px solid ${COLOR.borderSubtle}`,
           display: "flex",
           alignItems: "flex-start",
-          gap: 16,
+          gap: 14,
           position: "sticky",
           top: 0,
           background: COLOR.surface,
           zIndex: 1,
+          boxSizing: "border-box",
         }}
       >
         <div
@@ -622,7 +648,19 @@ function PartDetailPanel({
 
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: COLOR.textPrimary, margin: 0 }}>{part.name}</h2>
+            <h2
+              style={{
+                fontSize: 18,
+                fontWeight: 700,
+                color: COLOR.textPrimary,
+                margin: 0,
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                maxWidth: "100%",
+              }}
+            >
+              {part.name}
+            </h2>
             <span
               style={{
                 display: "inline-flex",
@@ -631,38 +669,54 @@ function PartDetailPanel({
                 padding: "3px 10px",
                 borderRadius: 999,
                 fontSize: 11.5,
-                fontWeight: 600,
+                fontWeight: 700,
                 background: health.bg,
                 color: health.text,
                 border: `1px solid ${health.border}`,
+                flexShrink: 0,
               }}
             >
-              <span style={{ width: 6, height: 6, borderRadius: "50%", background: health.dot }} />
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: health.dot, flexShrink: 0 }} />
               {health.label}
             </span>
           </div>
-          <p style={{ margin: "4px 0 0", fontSize: 12.5, color: COLOR.textTertiary, fontFamily: MONO }}>
+          <p
+            style={{
+              margin: "4px 0 0",
+              fontSize: 12.5,
+              color: COLOR.textTertiary,
+              fontFamily: MONO,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
             {part.partNumber || "No part number"} {part.category ? `· ${part.category}` : ""}
           </p>
         </div>
 
-        <button onClick={handleDelete} disabled={deleting} style={buttonStyle("danger")}>
+        <button
+          onClick={handleDelete}
+          onBlur={() => setConfirmDelete(false)}
+          disabled={deleting}
+          style={{ ...buttonStyle("danger"), opacity: deleting ? 0.6 : 1 }}
+        >
           <i className="ti ti-trash" style={{ fontSize: 14 }} aria-hidden="true" />
-          {deleting ? "Deleting…" : "Delete"}
+          {deleting ? "Deleting…" : confirmDelete ? "Confirm delete?" : "Delete"}
         </button>
       </div>
 
-      {/* Stat strip */}
+      {/* Stat strip — wraps instead of forcing a wider layout */}
       <div
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
+          gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
           gap: 1,
           background: COLOR.borderSubtle,
           borderBottom: `1px solid ${COLOR.borderSubtle}`,
         }}
       >
-        <StatCell label="On hand" value={`${part.quantityOnHand} ${part.unitOfMeasure}`} accent={health.text} />
+        <StatCell label="On hand" value={`${part.quantityOnHand} ${part.unitOfMeasure}`} warning={isLow} />
         <StatCell label="Minimum" value={String(part.minQuantity)} />
         <StatCell label="Unit cost" value={formatCurrency(part.unitCost)} />
         <StatCell label="Stock value" value={formatCurrency(stockValue)} />
@@ -671,26 +725,29 @@ function PartDetailPanel({
       {/* Two-column body */}
       <div
         style={{
-          padding: "26px 40px 48px",
+          padding: "24px 28px 48px",
           display: "grid",
           gridTemplateColumns: "minmax(0, 1.3fr) minmax(0, 1fr)",
-          gap: 40,
+          gap: 28,
           alignItems: "start",
+          boxSizing: "border-box",
+          maxWidth: "100%",
         }}
       >
         {/* Left column */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 26, minWidth: 0 }}>
-          <div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 24, minWidth: 0 }}>
+          <div style={{ minWidth: 0 }}>
             <SectionTitle>Details</SectionTitle>
             <div
               style={{
                 display: "grid",
-                gridTemplateColumns: "repeat(3, 1fr)",
+                gridTemplateColumns: "repeat(auto-fit, minmax(110px, 1fr))",
                 gap: 14,
                 padding: 16,
                 background: COLOR.bg,
                 border: `1px solid ${COLOR.borderSubtle}`,
                 borderRadius: 10,
+                boxSizing: "border-box",
               }}
             >
               <Field label="Reorder qty" value={part.reorderQuantity ? String(part.reorderQuantity) : "—"} />
@@ -701,11 +758,13 @@ function PartDetailPanel({
               <Field label="Unit" value={part.unitOfMeasure} />
             </div>
             {part.description && (
-              <p style={{ fontSize: 13, color: COLOR.textSecondary, marginTop: 14, lineHeight: 1.6 }}>{part.description}</p>
+              <p style={{ fontSize: 13, color: COLOR.textSecondary, marginTop: 14, lineHeight: 1.6, wordBreak: "break-word" }}>
+                {part.description}
+              </p>
             )}
           </div>
 
-          <div>
+          <div style={{ minWidth: 0 }}>
             <SectionTitle>Stock actions</SectionTitle>
             <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
               <StockActionRow
@@ -741,7 +800,7 @@ function PartDetailPanel({
             </div>
           </div>
 
-          <div>
+          <div style={{ minWidth: 0 }}>
             <SectionTitle>Stock history</SectionTitle>
             <div
               style={{
@@ -762,21 +821,39 @@ function PartDetailPanel({
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
+                    gap: 10,
                     padding: "12px 16px",
                     borderTop: i === 0 ? "none" : `1px solid ${COLOR.borderSubtle}`,
                     fontSize: 12.5,
                   }}
                 >
-                  <div>
+                  <div style={{ minWidth: 0 }}>
                     <p style={{ margin: 0, fontWeight: 600, color: COLOR.textPrimary, textTransform: "capitalize" }}>{m.type}</p>
-                    <p style={{ margin: 0, color: COLOR.textTertiary }}>{m.reason || "—"}</p>
+                    <p
+                      style={{
+                        margin: 0,
+                        color: COLOR.textTertiary,
+                        overflow: "hidden",
+                        textOverflow: "ellipsis",
+                        whiteSpace: "nowrap",
+                      }}
+                    >
+                      {m.reason || "—"}
+                    </p>
                   </div>
-                  <div style={{ textAlign: "right" }}>
-                    <p style={{ margin: 0, fontWeight: 700, fontFamily: MONO, color: m.quantityDelta >= 0 ? COLOR.success : COLOR.danger }}>
+                  <div style={{ textAlign: "right", flexShrink: 0 }}>
+                    <p
+                      style={{
+                        margin: 0,
+                        fontWeight: 700,
+                        fontFamily: MONO,
+                        color: m.quantityDelta >= 0 ? COLOR.success : COLOR.danger,
+                      }}
+                    >
                       {m.quantityDelta >= 0 ? "+" : ""}
                       {m.quantityDelta}
                     </p>
-                    <p style={{ margin: 0, color: COLOR.textTertiary }}>{formatDate(m.createdAt)}</p>
+                    <p style={{ margin: 0, color: COLOR.textTertiary, whiteSpace: "nowrap" }}>{formatDate(m.createdAt)}</p>
                   </div>
                 </div>
               ))}
@@ -785,8 +862,8 @@ function PartDetailPanel({
         </div>
 
         {/* Right column */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 26, minWidth: 0 }}>
-          <div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 24, minWidth: 0 }}>
+          <div style={{ minWidth: 0 }}>
             <SectionTitle>Linked equipment</SectionTitle>
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
               {part.linkedEquipmentIds.length === 0 && (
@@ -803,20 +880,28 @@ function PartDetailPanel({
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "space-between",
+                      gap: 8,
                       padding: "10px 12px",
                       background: COLOR.bg,
                       border: `1px solid ${COLOR.borderSubtle}`,
                       borderRadius: 8,
                       fontSize: 12.5,
+                      minWidth: 0,
+                      boxSizing: "border-box",
                     }}
                   >
-                    <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <i className="ti ti-tool" style={{ fontSize: 13, color: COLOR.accent }} aria-hidden="true" />
-                      {eq?.name ?? `Equipment #${eqId}`}
+                    <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0, flex: 1 }}>
+                      <i className="ti ti-tool" style={{ fontSize: 13, color: COLOR.accent, flexShrink: 0 }} aria-hidden="true" />
+                      <span
+                        title={eq?.name ?? `Equipment #${eqId}`}
+                        style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}
+                      >
+                        {eq?.name ?? `Equipment #${eqId}`}
+                      </span>
                     </span>
                     <button
                       onClick={() => handleUnlink(eqId)}
-                      style={{ border: "none", background: "transparent", color: COLOR.textTertiary, cursor: "pointer" }}
+                      style={{ border: "none", background: "transparent", color: COLOR.textTertiary, cursor: "pointer", flexShrink: 0, padding: 2, display: "flex" }}
                     >
                       <i className="ti ti-x" style={{ fontSize: 13 }} aria-hidden="true" />
                     </button>
@@ -828,7 +913,7 @@ function PartDetailPanel({
               <select
                 value={equipmentToLink}
                 onChange={(e) => setEquipmentToLink(e.target.value)}
-                style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: `1px solid ${COLOR.border}`, fontSize: 12.5 }}
+                style={{ flex: 1, minWidth: 0, padding: "8px 10px", borderRadius: 8, border: `1px solid ${COLOR.border}`, fontSize: 12.5 }}
               >
                 <option value="">Select equipment…</option>
                 {equipmentOptions
@@ -845,12 +930,14 @@ function PartDetailPanel({
                 style={{
                   padding: "8px 14px",
                   borderRadius: 8,
-                  border: "none",
+                  border: `1px solid ${equipmentToLink ? COLOR.accentBorder : COLOR.borderSubtle}`,
                   background: equipmentToLink ? COLOR.accentSurface : COLOR.borderSubtle,
                   color: equipmentToLink ? COLOR.accent : COLOR.textTertiary,
                   fontSize: 12.5,
-                  fontWeight: 600,
+                  fontWeight: 700,
                   cursor: equipmentToLink ? "pointer" : "default",
+                  flexShrink: 0,
+                  whiteSpace: "nowrap",
                 }}
               >
                 Link
@@ -863,24 +950,69 @@ function PartDetailPanel({
   );
 }
 
-function StatCell({ label, value, accent }: { label: string; value: string; accent?: string }) {
+function StatCell({ label, value, warning }: { label: string; value: string; warning?: boolean }) {
   return (
-    <div style={{ background: COLOR.surface, padding: "14px 20px" }}>
-      <p style={{ margin: "0 0 4px", fontSize: 10.5, color: COLOR.textTertiary, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+    <div
+      style={{
+        background: warning ? COLOR.dangerSurface : COLOR.surface,
+        padding: "14px 18px",
+        minWidth: 0,
+      }}
+    >
+      <p
+        style={{
+          margin: "0 0 4px",
+          fontSize: 10.5,
+          color: warning ? COLOR.danger : COLOR.textTertiary,
+          textTransform: "uppercase",
+          letterSpacing: "0.04em",
+          display: "flex",
+          alignItems: "center",
+          gap: 4,
+          fontWeight: warning ? 700 : 400,
+        }}
+      >
+        {warning && <i className="ti ti-alert-triangle" style={{ fontSize: 11 }} aria-hidden="true" />}
         {label}
       </p>
-      <p style={{ margin: 0, fontSize: 15, fontWeight: 700, fontFamily: MONO, color: accent ?? COLOR.textPrimary }}>{value}</p>
+      <p
+        style={{
+          margin: 0,
+          fontSize: 15,
+          fontWeight: 700,
+          fontFamily: MONO,
+          color: warning ? COLOR.danger : COLOR.textPrimary,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {value}
+      </p>
     </div>
   );
 }
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
-    <div>
+    <div style={{ minWidth: 0 }}>
       <p style={{ margin: "0 0 2px", fontSize: 11, color: COLOR.textTertiary, textTransform: "uppercase", letterSpacing: "0.03em" }}>
         {label}
       </p>
-      <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: COLOR.textPrimary }}>{value}</p>
+      <p
+        title={value}
+        style={{
+          margin: 0,
+          fontSize: 13,
+          fontWeight: 600,
+          color: COLOR.textPrimary,
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+          whiteSpace: "nowrap",
+        }}
+      >
+        {value}
+      </p>
     </div>
   );
 }
@@ -921,40 +1053,45 @@ function StockActionRow({
   label: string;
   color: string;
 }) {
+  const disabled = loading || !value || Number(value) <= 0;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1 }}>
-        <i className={`ti ${icon}`} style={{ fontSize: 15, color }} aria-hidden="true" />
+    <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1, minWidth: 0 }}>
+        <i className={`ti ${icon}`} style={{ fontSize: 15, color, flexShrink: 0 }} aria-hidden="true" />
         <input
           type="number"
           min={0}
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          onKeyDown={(e) => e.key === "Enter" && !disabled && onSubmit()}
           placeholder={placeholder}
           style={{
             flex: 1,
+            minWidth: 0,
             padding: "8px 10px",
             borderRadius: 8,
             border: `1px solid ${COLOR.border}`,
             fontSize: 12.5,
             outline: "none",
             fontFamily: MONO,
+            boxSizing: "border-box",
           }}
         />
       </div>
       <button
         onClick={onSubmit}
-        disabled={loading || !value}
+        disabled={disabled}
         style={{
           padding: "8px 14px",
           borderRadius: 8,
           border: "none",
-          background: loading || !value ? COLOR.borderSubtle : `${color}18`,
-          color: loading || !value ? COLOR.textTertiary : color,
+          background: disabled ? COLOR.borderSubtle : `${color}18`,
+          color: disabled ? COLOR.textTertiary : color,
           fontSize: 12.5,
-          fontWeight: 600,
-          cursor: loading || !value ? "default" : "pointer",
+          fontWeight: 700,
+          cursor: disabled ? "default" : "pointer",
           whiteSpace: "nowrap",
+          flexShrink: 0,
         }}
       >
         {loading ? "Saving…" : label}
@@ -1002,17 +1139,21 @@ function NewPartModal({
         alignItems: "center",
         justifyContent: "center",
         zIndex: 50,
+        padding: 16,
+        boxSizing: "border-box",
       }}
     >
       <div
         style={{
           width: 460,
+          maxWidth: "100%",
           maxHeight: "85vh",
           overflowY: "auto",
           background: COLOR.surface,
           borderRadius: 14,
           padding: 24,
           boxShadow: "0 20px 50px rgba(20,24,31,0.25)",
+          boxSizing: "border-box",
         }}
       >
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
@@ -1033,7 +1174,7 @@ function NewPartModal({
             <select
               value={form.category ?? ""}
               onChange={(e) => set("category", e.target.value || null)}
-              style={{ width: "100%", padding: "9px 10px", borderRadius: 8, border: `1px solid ${COLOR.border}`, fontSize: 13 }}
+              style={{ width: "100%", padding: "9px 10px", borderRadius: 8, border: `1px solid ${COLOR.border}`, fontSize: 13, boxSizing: "border-box" }}
             >
               <option value="">No category</option>
               {categories.map((c) => (
@@ -1123,7 +1264,7 @@ function ModalInput({
   type?: string;
 }) {
   return (
-    <div style={{ flex: 1 }}>
+    <div style={{ flex: 1, minWidth: 0 }}>
       <label style={{ fontSize: 12, fontWeight: 600, color: COLOR.textSecondary, display: "block", marginBottom: 4 }}>
         {label}
       </label>
