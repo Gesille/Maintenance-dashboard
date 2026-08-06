@@ -1247,6 +1247,10 @@ function StockActionRow({
 
 // ─── New part modal ───────────────────────────────────────────────────────────
 
+// ─── New part modal (elegant redesign) ────────────────────────────────────
+// Drop-in replacement for the existing NewPartModal + ModalInput.
+// Reuses the same COLOR / MONO / buttonStyle tokens already in the file.
+
 function NewPartModal({
   open,
   onClose,
@@ -1276,10 +1280,14 @@ function NewPartModal({
 
   return (
     <div
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
       style={{
         position: "fixed",
         inset: 0,
-        background: "rgba(20,24,31,0.45)",
+        background: "rgba(15,18,25,0.55)",
+        backdropFilter: "blur(3px)",
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
@@ -1290,97 +1298,167 @@ function NewPartModal({
     >
       <div
         style={{
-          width: 460,
+          width: 520,
           maxWidth: "100%",
-          maxHeight: "85vh",
-          overflowY: "auto",
+          maxHeight: "88vh",
+          display: "flex",
+          flexDirection: "column",
           background: COLOR.surface,
-          borderRadius: 14,
-          padding: 24,
-          boxShadow: "0 20px 50px rgba(20,24,31,0.25)",
+          borderRadius: 18,
+          boxShadow:
+            "0 24px 60px rgba(20,24,31,0.28), 0 4px 14px rgba(20,24,31,0.10)",
           boxSizing: "border-box",
+          overflow: "hidden",
         }}
       >
-        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
-          <h2 style={{ fontSize: 16, fontWeight: 700, color: COLOR.textPrimary, margin: 0 }}>New Part</h2>
-          <button onClick={onClose} style={{ border: "none", background: "transparent", cursor: "pointer" }}>
-            <i className="ti ti-x" style={{ fontSize: 16, color: COLOR.textTertiary }} aria-hidden="true" />
+        {/* Header */}
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 14,
+            padding: "22px 26px",
+            borderBottom: `1px solid ${COLOR.borderSubtle}`,
+            flexShrink: 0,
+          }}
+        >
+          <div
+            style={{
+              width: 40,
+              height: 40,
+              borderRadius: 11,
+              background: `linear-gradient(135deg, ${COLOR.accent} 0%, ${COLOR.accentDeep} 100%)`,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              boxShadow: "0 6px 16px rgba(99,102,241,0.32)",
+              flexShrink: 0,
+            }}
+          >
+            <i className="ti ti-package" style={{ fontSize: 18, color: "#fff" }} aria-hidden="true" />
+          </div>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <p
+              style={{
+                margin: "0 0 2px",
+                fontSize: 10.5,
+                fontWeight: 700,
+                color: COLOR.accent,
+                textTransform: "uppercase",
+                letterSpacing: "0.06em",
+              }}
+            >
+              Parts inventory
+            </p>
+            <h2 style={{ fontSize: 17, fontWeight: 700, color: COLOR.textPrimary, margin: 0 }}>
+              Add new part
+            </h2>
+          </div>
+          <button
+            onClick={onClose}
+            aria-label="Close"
+            style={{
+              border: "none",
+              background: COLOR.bg,
+              width: 30,
+              height: 30,
+              borderRadius: 9,
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <i className="ti ti-x" style={{ fontSize: 15, color: COLOR.textTertiary }} aria-hidden="true" />
           </button>
         </div>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          <ModalInput label="Name *" value={form.name} onChange={(v) => set("name", v)} />
-          <ModalInput label="Part number" value={form.partNumber ?? ""} onChange={(v) => set("partNumber", v || null)} />
+        {/* Body */}
+        <div style={{ padding: "22px 26px 6px", overflowY: "auto", flex: 1 }}>
+          <ModalSection title="Basic info" icon="ti-info-circle">
+            <ModalInput label="Name" required value={form.name} onChange={(v) => set("name", v)} placeholder="e.g. Compressor belt" />
+            <div style={{ display: "flex", gap: 10 }}>
+              <ModalInput label="Part number" value={form.partNumber ?? ""} onChange={(v) => set("partNumber", v || null)} placeholder="PN-0042" />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <ModalLabel>Category</ModalLabel>
+                <select
+                  value={form.category ?? ""}
+                  onChange={(e) => set("category", e.target.value || null)}
+                  style={selectStyle}
+                >
+                  <option value="">No category</option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.name}>
+                      {c.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+          </ModalSection>
 
-          <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: COLOR.textSecondary, display: "block", marginBottom: 4 }}>
-              Category
-            </label>
-            <select
-              value={form.category ?? ""}
-              onChange={(e) => set("category", e.target.value || null)}
-              style={{ width: "100%", padding: "9px 10px", borderRadius: 8, border: `1px solid ${COLOR.border}`, fontSize: 13, boxSizing: "border-box" }}
+          <ModalSection title="Stock & pricing" icon="ti-adjustments-dollar">
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(2, 1fr)",
+                gap: 10,
+                background: COLOR.bg,
+                border: `1px solid ${COLOR.borderSubtle}`,
+                borderRadius: 12,
+                padding: 14,
+              }}
             >
-              <option value="">No category</option>
-              {categories.map((c) => (
-                <option key={c.id} value={c.name}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
+              <ModalInput bare label="Initial qty" type="number" value={String(form.quantityOnHand ?? 0)} onChange={(v) => set("quantityOnHand", Number(v) || 0)} />
+              <ModalInput bare label="Unit" value={form.unitOfMeasure ?? "pcs"} onChange={(v) => set("unitOfMeasure", v)} />
+              <ModalInput bare label="Minimum qty" type="number" value={String(form.minQuantity ?? 0)} onChange={(v) => set("minQuantity", Number(v) || 0)} />
+              <ModalInput bare label="Unit cost" type="number" value={String(form.unitCost ?? 0)} onChange={(v) => set("unitCost", Number(v) || 0)} prefix="$" />
+            </div>
+          </ModalSection>
 
-          <div style={{ display: "flex", gap: 10 }}>
-            <ModalInput
-              label="Initial qty"
-              type="number"
-              value={String(form.quantityOnHand ?? 0)}
-              onChange={(v) => set("quantityOnHand", Number(v) || 0)}
-            />
-            <ModalInput label="Unit" value={form.unitOfMeasure ?? "pcs"} onChange={(v) => set("unitOfMeasure", v)} />
-          </div>
+          <ModalSection title="Sourcing" icon="ti-truck-delivery">
+            <div style={{ display: "flex", gap: 10 }}>
+              <ModalInput label="Vendor" value={form.vendor ?? ""} onChange={(v) => set("vendor", v || null)} placeholder="Supplier name" />
+              <ModalInput label="Location" value={form.location ?? ""} onChange={(v) => set("location", v || null)} placeholder="Shelf / bin" />
+            </div>
+            <ModalInput label="Barcode" value={form.barcode ?? ""} onChange={(v) => set("barcode", v || null)} placeholder="Scan or enter code" />
+          </ModalSection>
 
-          <div style={{ display: "flex", gap: 10 }}>
-            <ModalInput
-              label="Min quantity"
-              type="number"
-              value={String(form.minQuantity ?? 0)}
-              onChange={(v) => set("minQuantity", Number(v) || 0)}
-            />
-            <ModalInput
-              label="Unit cost"
-              type="number"
-              value={String(form.unitCost ?? 0)}
-              onChange={(v) => set("unitCost", Number(v) || 0)}
-            />
-          </div>
-
-          <ModalInput label="Vendor" value={form.vendor ?? ""} onChange={(v) => set("vendor", v || null)} />
-          <ModalInput label="Location" value={form.location ?? ""} onChange={(v) => set("location", v || null)} />
-          <ModalInput label="Barcode" value={form.barcode ?? ""} onChange={(v) => set("barcode", v || null)} />
-
-          <div>
-            <label style={{ fontSize: 12, fontWeight: 600, color: COLOR.textSecondary, display: "block", marginBottom: 4 }}>
-              Description
-            </label>
+          <ModalSection title="Notes" icon="ti-notes" last>
             <textarea
               value={form.description ?? ""}
               onChange={(e) => set("description", e.target.value || null)}
               rows={3}
+              placeholder="Any additional detail about this part…"
+              className="modal-focusable"
               style={{
                 width: "100%",
-                padding: "9px 10px",
-                borderRadius: 8,
+                padding: "10px 12px",
+                borderRadius: 10,
                 border: `1px solid ${COLOR.border}`,
                 fontSize: 13,
                 resize: "vertical",
                 boxSizing: "border-box",
+                fontFamily: "inherit",
+                color: COLOR.textPrimary,
+                background: COLOR.surface,
               }}
             />
-          </div>
+          </ModalSection>
         </div>
 
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20 }}>
+        {/* Footer */}
+        <div
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: 10,
+            padding: "16px 26px",
+            borderTop: `1px solid ${COLOR.borderSubtle}`,
+            flexShrink: 0,
+          }}
+        >
           <button onClick={onClose} style={buttonStyle("ghost")}>
             Cancel
           </button>
@@ -1389,45 +1467,137 @@ function NewPartModal({
             disabled={isLoading || !form.name.trim()}
             style={{ ...buttonStyle("primary"), opacity: isLoading || !form.name.trim() ? 0.6 : 1 }}
           >
-            {isLoading ? "Creating…" : "Create Part"}
+            {isLoading ? "Creating…" : "Create part"}
           </button>
         </div>
       </div>
+
+      <style>{`
+        .modal-focusable:focus {
+          outline: none;
+          border-color: ${COLOR.accent} !important;
+          box-shadow: 0 0 0 3px ${COLOR.accentSurface};
+        }
+      `}</style>
     </div>
   );
 }
+
+// ─── Modal sub-components ──────────────────────────────────────────────────
+
+function ModalSection({
+  title,
+  icon,
+  children,
+  last,
+}: {
+  title: string;
+  icon: string;
+  children: React.ReactNode;
+  last?: boolean;
+}) {
+  return (
+    <div style={{ marginBottom: last ? 4 : 22 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 12 }}>
+        <i className={`ti ${icon}`} style={{ fontSize: 13, color: COLOR.accent }} aria-hidden="true" />
+        <h3
+          style={{
+            fontSize: 11,
+            fontWeight: 700,
+            color: COLOR.accent,
+            textTransform: "uppercase",
+            letterSpacing: "0.05em",
+            margin: 0,
+          }}
+        >
+          {title}
+        </h3>
+        <div style={{ flex: 1, height: 1, background: COLOR.borderSubtle }} />
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>{children}</div>
+    </div>
+  );
+}
+
+function ModalLabel({ children }: { children: React.ReactNode }) {
+  return (
+    <label style={{ fontSize: 11.5, fontWeight: 600, color: COLOR.textSecondary, display: "block", marginBottom: 5 }}>
+      {children}
+    </label>
+  );
+}
+
+const selectStyle: React.CSSProperties = {
+  width: "100%",
+  padding: "9px 10px",
+  borderRadius: 10,
+  border: `1px solid ${COLOR.border}`,
+  fontSize: 13,
+  boxSizing: "border-box",
+  color: COLOR.textPrimary,
+  background: COLOR.surface,
+};
 
 function ModalInput({
   label,
   value,
   onChange,
   type = "text",
+  placeholder,
+  required,
+  bare,
+  prefix,
 }: {
   label: string;
   value: string;
   onChange: (v: string) => void;
   type?: string;
+  placeholder?: string;
+  required?: boolean;
+  bare?: boolean; // compact variant for the stock/pricing grid
+  prefix?: string;
 }) {
   return (
     <div style={{ flex: 1, minWidth: 0 }}>
-      <label style={{ fontSize: 12, fontWeight: 600, color: COLOR.textSecondary, display: "block", marginBottom: 4 }}>
+      <ModalLabel>
         {label}
-      </label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        style={{
-          width: "100%",
-          padding: "9px 10px",
-          borderRadius: 8,
-          border: `1px solid ${COLOR.border}`,
-          fontSize: 13,
-          outline: "none",
-          boxSizing: "border-box",
-        }}
-      />
+        {required && <span style={{ color: COLOR.danger }}> *</span>}
+      </ModalLabel>
+      <div style={{ position: "relative" }}>
+        {prefix && (
+          <span
+            style={{
+              position: "absolute",
+              left: 11,
+              top: "50%",
+              transform: "translateY(-50%)",
+              fontSize: 12.5,
+              color: COLOR.textTertiary,
+              pointerEvents: "none",
+            }}
+          >
+            {prefix}
+          </span>
+        )}
+        <input
+          type={type}
+          value={value}
+          placeholder={placeholder}
+          onChange={(e) => onChange(e.target.value)}
+          className="modal-focusable"
+          style={{
+            width: "100%",
+            padding: prefix ? "9px 10px 9px 22px" : "9px 10px",
+            borderRadius: 10,
+            border: `1px solid ${COLOR.border}`,
+            fontSize: 13,
+            outline: "none",
+            boxSizing: "border-box",
+            background: bare ? COLOR.surface : COLOR.surface,
+            color: COLOR.textPrimary,
+          }}
+        />
+      </div>
     </div>
   );
 }
-//
