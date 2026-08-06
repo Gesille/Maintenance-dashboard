@@ -83,7 +83,6 @@ function initials(name: string): string {
   );
 }
 
-// ─── Page ─────────────────────────────────────────────────────────────────────
 
 export default function PartsInventoryPage() {
   const [search, setSearch] = useState("");
