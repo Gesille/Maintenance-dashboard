@@ -1,62 +1,71 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
+import { WorkOrderSidebar } from "@/component/Sidebar";
+
+import { useGetAllCategoriesQuery } from "@/redux/Category/Categoryapi";
+import { useGetAllEquipmentQuery } from "@/redux/Equipment/Equipmentapi";
+
+import { Part, EMPTY_PART_FORM } from "@/types/Part";
 import {
-  AlertTriangle,
-  Trash2,
-  Plus,
-  Minus,
-  SlidersHorizontal,
-  Link2,
-  X,
-  Package,
-  Loader2,
-} from "lucide-react";
-import { useGetPartStockHistoryQuery, useRestockPartMutation, useConsumePartMutation, useAdjustPartQuantityMutation, useLinkPartToEquipmentMutation, useUnlinkPartFromEquipmentMutation, useDeletePartMutation } from "@/redux/Part/Partapi";
-import { Part, StockMovementType } from "@/types/Part";
+  useGetAllPartsQuery,
+  useGetPartStockHistoryQuery,
+  useRestockPartMutation,
+  useConsumePartMutation,
+  useAdjustPartQuantityMutation,
+  useLinkPartToEquipmentMutation,
+  useUnlinkPartFromEquipmentMutation,
+  useDeletePartMutation,
+  CreatePartInput,
+  useCreatePartMutation,
+} from "@/redux/Part/Partapi";
 
+// ─── Design tokens ──────────────────────────────────────────────────────────
+// Deliberately not a purple-gradient SaaS template: this is an operations
+// screen people scan quickly, so color is functional (status), not decorative.
 
-// If you have a real equipment slice, swap this for its hook
-// (e.g. useGetAllEquipmentQuery) and drop the `equipment` prop.
-export interface EquipmentOption {
-  id: number;
-  name: string;
-  code?: string | null;
-}
-
-interface Props {
-  part: Part;
-  equipment: EquipmentOption[]; // full equipment list, for the linking dropdown
-  onDeleted?: () => void;
-}
-
-const COLORS = {
-  indigo: "#6366F1",
-  purple: "#8B5CF6",
-  ink: "#0F172A",
-  slate: "#64748B",
-  slateLight: "#94A3B8",
-  border: "#EEF0FF",
-  borderStrong: "#E0E7FF",
-  bg: "#F8FAFF",
-  red: "#DC2626",
-  redBg: "#FEF2F2",
-  redBorder: "#FECACA",
-  green: "#16A34A",
-  greenBg: "#F0FDF4",
-  greenBorder: "#BBF7D0",
+const COLOR = {
+  bg: "#F7F8FA",
+  surface: "#FFFFFF",
+  border: "#E5E7EB",
+  borderSubtle: "#F1F2F4",
+  textPrimary: "#14181F",
+  textSecondary: "#667085",
+  textTertiary: "#9CA3AF",
+  accent: "#2A6F63", // deep teal — used sparingly, for primary actions only
+  accentSurface: "#EDF5F3",
+  danger: "#B42318",
+  dangerSurface: "#FEF3F2",
+  dangerBorder: "#FDA29B",
+  success: "#067647",
+  successSurface: "#ECFDF3",
+  successBorder: "#ABEFC6",
 };
 
-function initials(name: string) {
-  return name.trim().slice(0, 1).toUpperCase() || "?";
+const MONO =
+  'ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace';
+
+const STOCK_HEALTH = {
+  low: { label: "Low stock", bg: COLOR.dangerSurface, text: COLOR.danger, border: COLOR.dangerBorder, dot: "#EF4444" },
+  ok: { label: "In stock", bg: COLOR.successSurface, text: COLOR.success, border: COLOR.successBorder, dot: "#22C55E" },
+} as const;
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatCurrency(n: number): string {
+  return n.toLocaleString("en-US", { style: "currency", currency: "USD" });
 }
 
-function formatMoney(n: number) {
-  return `$${n.toFixed(2)}`;
+function stockHealth(part: Part): keyof typeof STOCK_HEALTH {
+  return part.isLowStock ? "low" : "ok";
 }
 
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleString(undefined, {
+function formatDate(iso: string | null | undefined): string {
+  if (!iso) return "—";
+  const d = new Date(iso);
+  if (isNaN(d.getTime())) return "—";
+  return d.toLocaleString("en-US", {
     month: "short",
     day: "numeric",
     hour: "numeric",
@@ -64,758 +73,1074 @@ function formatDate(iso: string) {
   });
 }
 
-const MOVEMENT_LABEL: Record<StockMovementType, string> = {
-  restock: "Restock",
-  consume: "Consume",
-  adjustment: "Adjustment",
-  initial: "Initial",
-};
+function initials(name: string): string {
+  return (
+    name
+      .split(" ")
+      .slice(0, 2)
+      .map((w) => w[0]?.toUpperCase() ?? "")
+      .join("") || "PT"
+  );
+}
 
-const MOVEMENT_COLOR: Record<StockMovementType, string> = {
-  restock: COLORS.green,
-  consume: COLORS.red,
-  adjustment: COLORS.indigo,
-  initial: COLORS.slate,
-};
 
-export function PartDetailPanel({ part, equipment, onDeleted }: Props) {
-  const isLow = part.isLowStock ?? part.quantityOnHand <= part.minQuantity;
+export default function PartsInventoryPage() {
+  const [search, setSearch] = useState("");
+  const [category, setCategory] = useState<string>("");
+  const [lowStockOnly, setLowStockOnly] = useState(false);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [newPartOpen, setNewPartOpen] = useState(false);
 
-  const { data: historyRes, isLoading: historyLoading } = useGetPartStockHistoryQuery(part.id);
-  const history = historyRes?.data ?? [];
+  const { data, isLoading, isError, refetch } = useGetAllPartsQuery({
+    search: search || undefined,
+    category: category || undefined,
+    lowStockOnly,
+  });
 
-  const [restock, { isLoading: restocking }] = useRestockPartMutation();
-  const [consume, { isLoading: consuming }] = useConsumePartMutation();
-  const [adjust, { isLoading: adjusting }] = useAdjustPartQuantityMutation();
-  const [linkEquipment, { isLoading: linking }] = useLinkPartToEquipmentMutation();
-  const [unlinkEquipment, { isLoading: unlinking }] = useUnlinkPartFromEquipmentMutation();
-  const [deletePart, { isLoading: deleting }] = useDeletePartMutation();
+  // Independent of the active filters, so the low-stock count is always
+  // accurate even when the user is searching or filtering something else.
+  const { data: lowStockData, refetch: refetchLowStock } = useGetAllPartsQuery({
+    lowStockOnly: true,
+  });
 
-  const [addQty, setAddQty] = useState("");
-  const [consumeQty, setConsumeQty] = useState("");
-  const [newCount, setNewCount] = useState("");
-  const [equipmentPick, setEquipmentPick] = useState("");
-  const [confirmDelete, setConfirmDelete] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const { data: categoryData } = useGetAllCategoriesQuery();
+  const { data: equipmentData } = useGetAllEquipmentQuery();
 
-  const linkedEquipment = useMemo(
-    () => equipment.filter((e) => part.linkedEquipmentIds?.includes(e.id)),
-    [equipment, part.linkedEquipmentIds],
+  const parts = data?.data ?? [];
+  const lowStockParts = lowStockData?.data ?? [];
+  const categories = categoryData?.data ?? [];
+  const equipmentOptions = useMemo(
+    () => (equipmentData?.data ?? []).filter((e: any) => e.active !== false),
+    [equipmentData],
   );
 
-  const availableEquipment = useMemo(
-    () => equipment.filter((e) => !part.linkedEquipmentIds?.includes(e.id)),
-    [equipment, part.linkedEquipmentIds],
+  const effectiveId = selectedId ?? parts[0]?.id ?? null;
+  const selectedPart = parts.find((p) => p.id === effectiveId) ?? null;
+
+  const handleSelect = useCallback((p: Part) => setSelectedId(p.id), []);
+
+  // Called by the detail panel / modal after any mutation succeeds, so the
+  // list and the low-stock banner both stay in sync without a manual reload.
+  const handleDataChanged = useCallback(() => {
+    refetch();
+    refetchLowStock();
+  }, [refetch, refetchLowStock]);
+
+  const handlePartDeleted = useCallback(
+    (id: number) => {
+      setSelectedId((current) => (current === id ? null : current));
+      handleDataChanged();
+    },
+    [handleDataChanged],
   );
 
-  async function handleRestock() {
-    const qty = Number(addQty);
-    if (!qty || qty <= 0) return;
-    setError(null);
-    try {
-      await restock({ id: part.id, quantity: qty, reason: "Manual restock" }).unwrap();
-      setAddQty("");
-    } catch {
-      setError("Couldn't restock this part. Try again.");
-    }
+  // ── Loading state ──
+  if (isLoading) {
+    return (
+      <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: COLOR.bg }}>
+        <WorkOrderSidebar />
+        <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+            <span
+              style={{
+                width: 16,
+                height: 16,
+                borderRadius: "50%",
+                border: `2px solid ${COLOR.border}`,
+                borderTopColor: COLOR.accent,
+                animation: "spin 0.7s linear infinite",
+              }}
+            />
+            <p style={{ fontSize: 13, color: COLOR.textSecondary, margin: 0 }}>Loading parts inventory…</p>
+          </div>
+        </div>
+        <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      </div>
+    );
   }
 
-  async function handleConsume() {
-    const qty = Number(consumeQty);
-    if (!qty || qty <= 0) return;
-    if (qty > part.quantityOnHand) {
-      setError(`Only ${part.quantityOnHand} ${part.unitOfMeasure} on hand.`);
-      return;
-    }
-    setError(null);
-    try {
-      await consume({ id: part.id, quantity: qty, reason: "Manual consume" }).unwrap();
-      setConsumeQty("");
-    } catch {
-      setError("Couldn't consume stock. Try again.");
-    }
+  // ── Error state ──
+  if (isError) {
+    return (
+      <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: COLOR.bg }}>
+        <WorkOrderSidebar />
+        <div
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 14,
+          }}
+        >
+          <i className="ti ti-alert-triangle" style={{ fontSize: 22, color: COLOR.danger }} aria-hidden="true" />
+          <div style={{ textAlign: "center" }}>
+            <p style={{ fontSize: 14, fontWeight: 600, color: COLOR.textPrimary, margin: "0 0 4px" }}>
+              Couldn&apos;t load parts inventory
+            </p>
+            <p style={{ fontSize: 12.5, color: COLOR.textSecondary, margin: 0 }}>
+              Check your connection and try again.
+            </p>
+          </div>
+          <button onClick={refetch} style={buttonStyle("primary")}>
+            <i className="ti ti-refresh" style={{ fontSize: 13 }} aria-hidden="true" />
+            Try again
+          </button>
+        </div>
+      </div>
+    );
   }
 
-  async function handleAdjust() {
-    if (newCount === "") return;
-    const qty = Number(newCount);
-    if (qty < 0) return;
-    setError(null);
-    try {
-      await adjust({ id: part.id, newQuantity: qty, reason: "Manual count adjustment" }).unwrap();
-      setNewCount("");
-    } catch {
-      setError("Couldn't adjust the count. Try again.");
-    }
-  }
+  // ── Main layout ──
+  return (
+    <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: COLOR.bg }}>
+      <WorkOrderSidebar />
+      <main style={{ flex: 1, display: "flex", overflow: "hidden", minWidth: 0 }}>
+        <PartListPanel
+          parts={parts}
+          lowStockCount={lowStockParts.length}
+          categories={categories}
+          selectedId={effectiveId}
+          onSelect={handleSelect}
+          onNew={() => setNewPartOpen(true)}
+          search={search}
+          onSearchChange={setSearch}
+          category={category}
+          onCategoryChange={setCategory}
+          lowStockOnly={lowStockOnly}
+          onLowStockToggle={() => setLowStockOnly((v) => !v)}
+        />
 
-  async function handleLink() {
-    if (!equipmentPick) return;
-    setError(null);
-    try {
-      await linkEquipment({ id: part.id, equipmentId: Number(equipmentPick) }).unwrap();
-      setEquipmentPick("");
-    } catch {
-      setError("Couldn't link that equipment. Try again.");
-    }
-  }
+        {selectedPart ? (
+          <PartDetailPanel
+            key={selectedPart.id}
+            part={selectedPart}
+            equipmentOptions={equipmentOptions}
+            onChanged={handleDataChanged}
+            onDeleted={handlePartDeleted}
+          />
+        ) : (
+          <EmptyDetailState />
+        )}
 
-  async function handleUnlink(equipmentId: number) {
-    setError(null);
-    try {
-      await unlinkEquipment({ id: part.id, equipmentId }).unwrap();
-    } catch {
-      setError("Couldn't unlink that equipment. Try again.");
-    }
-  }
+        <NewPartModal
+          open={newPartOpen}
+          onClose={() => setNewPartOpen(false)}
+          categories={categories}
+          onCreated={handleDataChanged}
+        />
+      </main>
+    </div>
+  );
+}
 
-  async function handleDelete() {
-    if (!confirmDelete) {
-      setConfirmDelete(true);
-      return;
-    }
-    try {
-      await deletePart(part.id).unwrap();
-      onDeleted?.();
-    } catch {
-      setError("Couldn't delete this part. Try again.");
-      setConfirmDelete(false);
-    }
-  }
+// ─── Shared button style helper ────────────────────────────────────────────
 
+function buttonStyle(variant: "primary" | "secondary" | "danger" | "ghost"): React.CSSProperties {
+  const base: React.CSSProperties = {
+    display: "inline-flex",
+    alignItems: "center",
+    gap: 6,
+    padding: "8px 14px",
+    borderRadius: 8,
+    fontSize: 12.5,
+    fontWeight: 600,
+    cursor: "pointer",
+    border: "1px solid transparent",
+  };
+  switch (variant) {
+    case "primary":
+      return { ...base, background: COLOR.accent, color: "#fff" };
+    case "danger":
+      return { ...base, background: COLOR.dangerSurface, color: COLOR.danger, border: `1px solid ${COLOR.dangerBorder}` };
+    case "ghost":
+      return { ...base, background: "transparent", color: COLOR.textSecondary, border: `1px solid ${COLOR.border}` };
+    default:
+      return { ...base, background: COLOR.surface, color: COLOR.textPrimary, border: `1px solid ${COLOR.border}` };
+  }
+}
+
+// ─── List panel ───────────────────────────────────────────────────────────────
+
+function PartListPanel({
+  parts,
+  lowStockCount,
+  categories,
+  selectedId,
+  onSelect,
+  onNew,
+  search,
+  onSearchChange,
+  category,
+  onCategoryChange,
+  lowStockOnly,
+  onLowStockToggle,
+}: {
+  parts: Part[];
+  lowStockCount: number;
+  categories: { id: number; name: string }[];
+  selectedId: number | null;
+  onSelect: (p: Part) => void;
+  onNew: () => void;
+  search: string;
+  onSearchChange: (v: string) => void;
+  category: string;
+  onCategoryChange: (v: string) => void;
+  lowStockOnly: boolean;
+  onLowStockToggle: () => void;
+}) {
+  return (
+    <div
+      style={{
+        width: 380,
+        flexShrink: 0,
+        borderRight: `1px solid ${COLOR.border}`,
+        display: "flex",
+        flexDirection: "column",
+        background: COLOR.surface,
+      }}
+    >
+      <div style={{ padding: "20px 20px 14px", borderBottom: `1px solid ${COLOR.borderSubtle}` }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
+          <div>
+            <h1 style={{ fontSize: 17, fontWeight: 700, color: COLOR.textPrimary, margin: 0 }}>Parts Inventory</h1>
+            <p style={{ margin: "2px 0 0", fontSize: 12, color: COLOR.textTertiary }}>
+              {parts.length} {parts.length === 1 ? "part" : "parts"} shown
+            </p>
+          </div>
+          <button onClick={onNew} style={buttonStyle("primary")}>
+            <i className="ti ti-plus" style={{ fontSize: 13 }} aria-hidden="true" />
+            New part
+          </button>
+        </div>
+
+        {/* Persistent low-stock alert — always visible, independent of filters */}
+        {lowStockCount > 0 && (
+          <button
+            onClick={onLowStockToggle}
+            style={{
+              width: "100%",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "10px 12px",
+              marginBottom: 12,
+              borderRadius: 8,
+              border: `1px solid ${COLOR.dangerBorder}`,
+              background: COLOR.dangerSurface,
+              cursor: "pointer",
+              textAlign: "left",
+            }}
+          >
+            <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5, fontWeight: 600, color: COLOR.danger }}>
+              <i className="ti ti-alert-triangle" style={{ fontSize: 14 }} aria-hidden="true" />
+              {lowStockCount} {lowStockCount === 1 ? "part is" : "parts are"} below minimum
+            </span>
+            <span style={{ fontSize: 12, fontWeight: 600, color: COLOR.danger, textDecoration: lowStockOnly ? "none" : "underline" }}>
+              {lowStockOnly ? "Showing" : "View"}
+            </span>
+          </button>
+        )}
+
+        <div style={{ position: "relative", marginBottom: 10 }}>
+          <i
+            className="ti ti-search"
+            style={{ position: "absolute", left: 12, top: "50%", transform: "translateY(-50%)", fontSize: 14, color: COLOR.textTertiary }}
+            aria-hidden="true"
+          />
+          <input
+            value={search}
+            onChange={(e) => onSearchChange(e.target.value)}
+            placeholder="Search by name, part #, barcode…"
+            style={{
+              width: "100%",
+              padding: "9px 12px 9px 34px",
+              borderRadius: 8,
+              border: `1px solid ${COLOR.border}`,
+              fontSize: 13,
+              outline: "none",
+              boxSizing: "border-box",
+              background: COLOR.bg,
+            }}
+          />
+        </div>
+
+        <div style={{ display: "flex", gap: 8 }}>
+          <select
+            value={category}
+            onChange={(e) => onCategoryChange(e.target.value)}
+            style={{
+              flex: 1,
+              padding: "8px 10px",
+              borderRadius: 8,
+              border: `1px solid ${COLOR.border}`,
+              fontSize: 12.5,
+              color: COLOR.textPrimary,
+              background: COLOR.surface,
+            }}
+          >
+            <option value="">All categories</option>
+            {categories.map((c) => (
+              <option key={c.id} value={c.name}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+
+          <button
+            onClick={onLowStockToggle}
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              padding: "8px 12px",
+              borderRadius: 8,
+              border: `1px solid ${lowStockOnly ? COLOR.dangerBorder : COLOR.border}`,
+              background: lowStockOnly ? COLOR.dangerSurface : COLOR.surface,
+              color: lowStockOnly ? COLOR.danger : COLOR.textSecondary,
+              fontSize: 12.5,
+              fontWeight: 600,
+              cursor: "pointer",
+              whiteSpace: "nowrap",
+            }}
+          >
+            <i className="ti ti-filter" style={{ fontSize: 13 }} aria-hidden="true" />
+            Low stock
+          </button>
+        </div>
+      </div>
+
+      <div style={{ flex: 1, overflowY: "auto" }}>
+        {parts.length === 0 && (
+          <div style={{ padding: "48px 24px", textAlign: "center" }}>
+            <i className="ti ti-package-off" style={{ fontSize: 24, color: COLOR.textTertiary }} aria-hidden="true" />
+            <p style={{ fontSize: 13, color: COLOR.textSecondary, margin: "10px 0 0" }}>No parts match your filters.</p>
+          </div>
+        )}
+        {parts.map((p) => {
+          const health = STOCK_HEALTH[stockHealth(p)];
+          const active = p.id === selectedId;
+          const low = p.isLowStock;
+          return (
+            <button
+              key={p.id}
+              onClick={() => onSelect(p)}
+              style={{
+                display: "block",
+                width: "100%",
+                textAlign: "left",
+                padding: "13px 20px 13px 17px",
+                border: "none",
+                borderBottom: `1px solid ${COLOR.borderSubtle}`,
+                background: active ? COLOR.accentSurface : "transparent",
+                borderLeft: `3px solid ${active ? COLOR.accent : low ? health.dot : "transparent"}`,
+                cursor: "pointer",
+              }}
+            >
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 8 }}>
+                <div style={{ minWidth: 0 }}>
+                  <p
+                    style={{
+                      margin: "0 0 3px",
+                      fontSize: 13.5,
+                      fontWeight: 600,
+                      color: COLOR.textPrimary,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                  >
+                    {p.name}
+                  </p>
+                  <p style={{ margin: 0, fontSize: 12, color: COLOR.textTertiary, fontFamily: MONO }}>
+                    {p.partNumber || "No part #"} {p.category ? `· ${p.category}` : ""}
+                  </p>
+                </div>
+                <span
+                  style={{
+                    flexShrink: 0,
+                    display: "inline-flex",
+                    alignItems: "center",
+                    gap: 5,
+                    padding: "3px 9px",
+                    borderRadius: 6,
+                    fontSize: 11.5,
+                    fontWeight: 700,
+                    fontFamily: MONO,
+                    background: health.bg,
+                    color: health.text,
+                    border: `1px solid ${health.border}`,
+                  }}
+                >
+                  {low && <span style={{ width: 5, height: 5, borderRadius: "50%", background: health.dot }} />}
+                  {p.quantityOnHand} {p.unitOfMeasure}
+                </span>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+// ─── Empty detail state (shown when nothing is selected) ─────────────────────
+
+function EmptyDetailState() {
   return (
     <div
       style={{
         flex: 1,
         minWidth: 0,
-        height: "100%",
-        overflowY: "auto",
-        overflowX: "hidden",
-        background: "#fff",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        background: COLOR.surface,
+        gap: 10,
       }}
     >
-      <div style={{ maxWidth: 1040, margin: "0 auto", padding: "28px 32px 64px" }}>
-        {/* Header */}
+      <i className="ti ti-package" style={{ fontSize: 26, color: COLOR.textTertiary }} aria-hidden="true" />
+      <p style={{ fontSize: 14, fontWeight: 600, color: COLOR.textPrimary, margin: 0 }}>Select a part</p>
+      <p style={{ fontSize: 12.5, color: COLOR.textTertiary, margin: 0 }}>Choose a part from the list to see its details.</p>
+    </div>
+  );
+}
+
+// ─── Detail panel ─────────────────────────────────────────────────────────────
+
+function PartDetailPanel({
+  part,
+  equipmentOptions,
+  onChanged,
+  onDeleted,
+}: {
+  part: Part;
+  equipmentOptions: { id: number; name: string; assetCode?: string | null }[];
+  onChanged: () => void;
+  onDeleted: (id: number) => void;
+}) {
+  const { data: historyData, refetch: refetchHistory } = useGetPartStockHistoryQuery(part.id);
+  const [restockPart, { isLoading: restocking }] = useRestockPartMutation();
+  const [consumePart, { isLoading: consuming }] = useConsumePartMutation();
+  const [adjustQuantity, { isLoading: adjusting }] = useAdjustPartQuantityMutation();
+  const [linkEquipment] = useLinkPartToEquipmentMutation();
+  const [unlinkEquipment] = useUnlinkPartFromEquipmentMutation();
+  const [deletePart, { isLoading: deleting }] = useDeletePartMutation();
+
+  const [restockQty, setRestockQty] = useState("");
+  const [consumeQty, setConsumeQty] = useState("");
+  const [adjustQty, setAdjustQty] = useState("");
+  const [equipmentToLink, setEquipmentToLink] = useState("");
+
+  const health = STOCK_HEALTH[stockHealth(part)];
+  const history = historyData?.data ?? [];
+  const stockValue = part.unitCost * part.quantityOnHand;
+
+  // Every mutation below refetches both the stock history and the parent's
+  // parts list (and low-stock banner) on success, so quantities update
+  // immediately instead of waiting on a manual page reload.
+
+  const handleRestock = async () => {
+    const qty = Number(restockQty);
+    if (!qty || qty <= 0) return;
+    await restockPart({ id: part.id, quantity: qty, reason: "Manual restock" }).unwrap();
+    setRestockQty("");
+    refetchHistory();
+    onChanged();
+  };
+
+  const handleConsume = async () => {
+    const qty = Number(consumeQty);
+    if (!qty || qty <= 0) return;
+    await consumePart({ id: part.id, quantity: qty, reason: "Manual consumption" }).unwrap();
+    setConsumeQty("");
+    refetchHistory();
+    onChanged();
+  };
+
+  const handleAdjust = async () => {
+    if (adjustQty === "" || Number(adjustQty) < 0) return;
+    await adjustQuantity({ id: part.id, newQuantity: Number(adjustQty), reason: "Manual count correction" }).unwrap();
+    setAdjustQty("");
+    refetchHistory();
+    onChanged();
+  };
+
+  const handleLink = async () => {
+    if (!equipmentToLink) return;
+    await linkEquipment({ id: part.id, equipmentId: Number(equipmentToLink) }).unwrap();
+    setEquipmentToLink("");
+    onChanged();
+  };
+
+  const handleUnlink = async (equipmentId: number) => {
+    await unlinkEquipment({ id: part.id, equipmentId }).unwrap();
+    onChanged();
+  };
+
+  const handleDelete = async () => {
+    if (!confirm(`Delete "${part.name}"? This can't be undone.`)) return;
+    await deletePart(part.id).unwrap();
+    onDeleted(part.id);
+  };
+
+  return (
+    <div style={{ flex: 1, minWidth: 0, overflowY: "auto", background: COLOR.surface }}>
+      {/* Header band */}
+      <div
+        style={{
+          padding: "22px 40px",
+          borderBottom: `1px solid ${COLOR.borderSubtle}`,
+          display: "flex",
+          alignItems: "flex-start",
+          gap: 16,
+          position: "sticky",
+          top: 0,
+          background: COLOR.surface,
+          zIndex: 1,
+        }}
+      >
         <div
           style={{
+            width: 42,
+            height: 42,
+            borderRadius: 10,
+            background: COLOR.accentSurface,
+            flexShrink: 0,
             display: "flex",
-            alignItems: "flex-start",
-            justifyContent: "space-between",
-            gap: 16,
-            marginBottom: 24,
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 13,
+            fontWeight: 700,
+            color: COLOR.accent,
           }}
         >
-          <div style={{ display: "flex", alignItems: "center", gap: 14, minWidth: 0 }}>
-            <div
+          {initials(part.name)}
+        </div>
+
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: COLOR.textPrimary, margin: 0 }}>{part.name}</h2>
+            <span
               style={{
-                width: 44,
-                height: 44,
-                borderRadius: 12,
-                flexShrink: 0,
-                background: "linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)",
-                color: "#fff",
-                display: "flex",
+                display: "inline-flex",
                 alignItems: "center",
-                justifyContent: "center",
-                fontWeight: 700,
-                fontSize: 17,
-                boxShadow: "0 4px 12px rgba(99,102,241,0.3)",
+                gap: 6,
+                padding: "3px 10px",
+                borderRadius: 999,
+                fontSize: 11.5,
+                fontWeight: 600,
+                background: health.bg,
+                color: health.text,
+                border: `1px solid ${health.border}`,
               }}
             >
-              {initials(part.name)}
-            </div>
-            <div style={{ minWidth: 0 }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
-                <h1
-                  style={{
-                    fontSize: 19,
-                    fontWeight: 700,
-                    color: COLORS.ink,
-                    margin: 0,
-                    letterSpacing: "-0.02em",
-                  }}
-                >
-                  {part.name}
-                </h1>
-                <span
-                  style={{
-                    display: "inline-flex",
-                    alignItems: "center",
-                    gap: 5,
-                    fontSize: 11,
-                    fontWeight: 600,
-                    padding: "3px 9px",
-                    borderRadius: 99,
-                    background: isLow ? COLORS.redBg : COLORS.greenBg,
-                    color: isLow ? COLORS.red : COLORS.green,
-                    border: `1px solid ${isLow ? COLORS.redBorder : COLORS.greenBorder}`,
-                  }}
-                >
-                  <span
-                    style={{
-                      width: 6,
-                      height: 6,
-                      borderRadius: 99,
-                      background: isLow ? COLORS.red : COLORS.green,
-                    }}
-                  />
-                  {isLow ? "Low stock" : "In stock"}
-                </span>
-              </div>
-              <p style={{ fontSize: 12, color: COLORS.slateLight, margin: "3px 0 0" }}>
-                #{part.id}
-                {part.category ? ` · ${part.category}` : ""}
-              </p>
-            </div>
+              <span style={{ width: 6, height: 6, borderRadius: "50%", background: health.dot }} />
+              {health.label}
+            </span>
           </div>
-
-          <button
-            onClick={handleDelete}
-            onBlur={() => setConfirmDelete(false)}
-            disabled={deleting}
-            style={{
-              display: "flex",
-              alignItems: "center",
-              gap: 6,
-              padding: "9px 14px",
-              borderRadius: 10,
-              border: `1.5px solid ${confirmDelete ? COLORS.red : COLORS.redBorder}`,
-              background: confirmDelete ? COLORS.red : COLORS.redBg,
-              color: confirmDelete ? "#fff" : COLORS.red,
-              fontSize: 12,
-              fontWeight: 600,
-              cursor: deleting ? "default" : "pointer",
-              opacity: deleting ? 0.6 : 1,
-              flexShrink: 0,
-              transition: "all 0.15s",
-              whiteSpace: "nowrap",
-            }}
-          >
-            {deleting ? <Loader2 size={13} className="animate-spin" /> : <Trash2 size={13} />}
-            {confirmDelete ? "Confirm delete?" : "Delete"}
-          </button>
+          <p style={{ margin: "4px 0 0", fontSize: 12.5, color: COLOR.textTertiary, fontFamily: MONO }}>
+            {part.partNumber || "No part number"} {part.category ? `· ${part.category}` : ""}
+          </p>
         </div>
 
-        {error && (
-          <div
-            style={{
-              marginBottom: 20,
-              padding: "10px 14px",
-              borderRadius: 10,
-              background: COLORS.redBg,
-              border: `1px solid ${COLORS.redBorder}`,
-              color: COLORS.red,
-              fontSize: 12,
-              fontWeight: 500,
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              gap: 12,
-            }}
-          >
-            {error}
-            <button
-              onClick={() => setError(null)}
-              style={{ background: "none", border: "none", cursor: "pointer", color: COLORS.red }}
+        <button onClick={handleDelete} disabled={deleting} style={buttonStyle("danger")}>
+          <i className="ti ti-trash" style={{ fontSize: 14 }} aria-hidden="true" />
+          {deleting ? "Deleting…" : "Delete"}
+        </button>
+      </div>
+
+      {/* Stat strip */}
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "repeat(4, 1fr)",
+          gap: 1,
+          background: COLOR.borderSubtle,
+          borderBottom: `1px solid ${COLOR.borderSubtle}`,
+        }}
+      >
+        <StatCell label="On hand" value={`${part.quantityOnHand} ${part.unitOfMeasure}`} accent={health.text} />
+        <StatCell label="Minimum" value={String(part.minQuantity)} />
+        <StatCell label="Unit cost" value={formatCurrency(part.unitCost)} />
+        <StatCell label="Stock value" value={formatCurrency(stockValue)} />
+      </div>
+
+      {/* Two-column body */}
+      <div
+        style={{
+          padding: "26px 40px 48px",
+          display: "grid",
+          gridTemplateColumns: "minmax(0, 1.3fr) minmax(0, 1fr)",
+          gap: 40,
+          alignItems: "start",
+        }}
+      >
+        {/* Left column */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 26, minWidth: 0 }}>
+          <div>
+            <SectionTitle>Details</SectionTitle>
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(3, 1fr)",
+                gap: 14,
+                padding: 16,
+                background: COLOR.bg,
+                border: `1px solid ${COLOR.borderSubtle}`,
+                borderRadius: 10,
+              }}
             >
-              <X size={13} />
-            </button>
-          </div>
-        )}
-
-        {/* Stat cards — responsive grid, never overflows the panel */}
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "repeat(auto-fit, minmax(140px, 1fr))",
-            gap: 12,
-            marginBottom: 24,
-          }}
-        >
-          <StatCard label="On hand" value={`${part.quantityOnHand} ${part.unitOfMeasure}`} highlight={isLow} />
-          <StatCard label="Minimum" value={`${part.minQuantity}`} />
-          <StatCard label="Unit cost" value={formatMoney(part.unitCost)} />
-          <StatCard label="Stock value" value={formatMoney(part.unitCost * part.quantityOnHand)} />
-        </div>
-
-        <div
-          style={{
-            display: "grid",
-            gridTemplateColumns: "minmax(0, 1.3fr) minmax(0, 1fr)",
-            gap: 20,
-            marginBottom: 24,
-          }}
-        >
-          {/* Details */}
-          <Section title="Details">
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16 }}>
-              <Field label="Reorder qty" value={part.reorderQuantity ?? "—"} />
-              <Field label="Vendor" value={part.vendor ?? "—"} />
-              <Field label="Vendor part #" value={part.vendorPartNumber ?? "—"} />
-              <Field label="Location" value={part.location ?? "—"} />
-              <Field label="Barcode" value={part.barcode ?? "—"} />
+              <Field label="Reorder qty" value={part.reorderQuantity ? String(part.reorderQuantity) : "—"} />
+              <Field label="Vendor" value={part.vendor || "—"} />
+              <Field label="Vendor part #" value={part.vendorPartNumber || "—"} />
+              <Field label="Location" value={part.location || "—"} />
+              <Field label="Barcode" value={part.barcode || "—"} />
               <Field label="Unit" value={part.unitOfMeasure} />
             </div>
             {part.description && (
-              <p
-                style={{
-                  fontSize: 12.5,
-                  color: COLORS.slate,
-                  margin: "16px 0 0",
-                  lineHeight: 1.6,
-                  paddingTop: 14,
-                  borderTop: `1px solid ${COLORS.border}`,
-                }}
-              >
-                {part.description}
-              </p>
+              <p style={{ fontSize: 13, color: COLOR.textSecondary, marginTop: 14, lineHeight: 1.6 }}>{part.description}</p>
             )}
-          </Section>
-
-          {/* Linked equipment */}
-          <Section title="Linked equipment">
-            {linkedEquipment.length === 0 ? (
-              <div
-                style={{
-                  padding: "18px 14px",
-                  textAlign: "center",
-                  color: COLORS.slateLight,
-                  fontSize: 12,
-                  background: COLORS.bg,
-                  borderRadius: 10,
-                  border: `1px dashed ${COLORS.borderStrong}`,
-                  marginBottom: 12,
-                }}
-              >
-                <Package size={18} color="#C7D2FE" style={{ marginBottom: 6 }} />
-                <div>No equipment linked yet.</div>
-              </div>
-            ) : (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
-                {linkedEquipment.map((eq) => (
-                  <div
-                    key={eq.id}
-                    style={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "space-between",
-                      gap: 8,
-                      padding: "9px 12px",
-                      borderRadius: 10,
-                      background: COLORS.bg,
-                      border: `1px solid ${COLORS.border}`,
-                    }}
-                  >
-                    <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
-                      <Link2 size={13} color={COLORS.indigo} style={{ flexShrink: 0 }} />
-                      <span
-                        style={{
-                          fontSize: 12.5,
-                          fontWeight: 600,
-                          color: COLORS.ink,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
-                        }}
-                      >
-                        {eq.name}
-                      </span>
-                      {eq.code && (
-                        <span style={{ fontSize: 11, color: COLORS.slateLight, flexShrink: 0 }}>
-                          #{eq.code}
-                        </span>
-                      )}
-                    </div>
-                    <button
-                      onClick={() => handleUnlink(eq.id)}
-                      disabled={unlinking}
-                      title="Unlink equipment"
-                      style={{
-                        background: "none",
-                        border: "none",
-                        cursor: unlinking ? "default" : "pointer",
-                        color: COLORS.slateLight,
-                        padding: 4,
-                        flexShrink: 0,
-                      }}
-                      onMouseEnter={(e) => ((e.currentTarget as HTMLButtonElement).style.color = COLORS.red)}
-                      onMouseLeave={(e) => ((e.currentTarget as HTMLButtonElement).style.color = COLORS.slateLight)}
-                    >
-                      <X size={14} />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <div style={{ display: "flex", gap: 8 }}>
-              <select
-                value={equipmentPick}
-                onChange={(e) => setEquipmentPick(e.target.value)}
-                style={{
-                  flex: 1,
-                  minWidth: 0,
-                  height: 36,
-                  borderRadius: 9,
-                  border: `1.5px solid ${COLORS.borderStrong}`,
-                  padding: "0 10px",
-                  fontSize: 12.5,
-                  color: equipmentPick ? COLORS.ink : COLORS.slateLight,
-                  background: "#fff",
-                  outline: "none",
-                }}
-              >
-                <option value="">Select equipment…</option>
-                {availableEquipment.map((eq) => (
-                  <option key={eq.id} value={eq.id}>
-                    {eq.name}
-                  </option>
-                ))}
-              </select>
-              <button
-                onClick={handleLink}
-                disabled={!equipmentPick || linking}
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 5,
-                  padding: "0 14px",
-                  height: 36,
-                  borderRadius: 9,
-                  border: "none",
-                  background: !equipmentPick || linking
-                    ? "#E2E8F0"
-                    : "linear-gradient(135deg, #6366F1 0%, #8B5CF6 100%)",
-                  color: !equipmentPick || linking ? "#94A3B8" : "#fff",
-                  fontSize: 12,
-                  fontWeight: 600,
-                  cursor: !equipmentPick || linking ? "default" : "pointer",
-                  whiteSpace: "nowrap",
-                  flexShrink: 0,
-                }}
-              >
-                {linking ? <Loader2 size={13} className="animate-spin" /> : <Link2 size={13} />}
-                Link
-              </button>
-            </div>
-            {availableEquipment.length === 0 && equipment.length > 0 && (
-              <p style={{ fontSize: 11, color: COLORS.slateLight, margin: "8px 0 0" }}>
-                All available equipment is already linked.
-              </p>
-            )}
-          </Section>
-        </div>
-
-        {/* Stock actions */}
-        <Section title="Stock actions">
-          <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-            <StockActionRow
-              icon={<Plus size={13} color={COLORS.green} strokeWidth={2.5} />}
-              iconBg={COLORS.greenBg}
-              placeholder="Qty to add"
-              value={addQty}
-              onChange={setAddQty}
-              buttonLabel="Restock"
-              onSubmit={handleRestock}
-              loading={restocking}
-              disabled={!addQty || Number(addQty) <= 0}
-              accent={COLORS.green}
-            />
-            <StockActionRow
-              icon={<Minus size={13} color={COLORS.red} strokeWidth={2.5} />}
-              iconBg={COLORS.redBg}
-              placeholder="Qty to consume"
-              value={consumeQty}
-              onChange={setConsumeQty}
-              buttonLabel="Consume"
-              onSubmit={handleConsume}
-              loading={consuming}
-              disabled={!consumeQty || Number(consumeQty) <= 0}
-              accent={COLORS.red}
-            />
-            <StockActionRow
-              icon={<SlidersHorizontal size={13} color={COLORS.indigo} strokeWidth={2.5} />}
-              iconBg="#EEF2FF"
-              placeholder="New count"
-              value={newCount}
-              onChange={setNewCount}
-              buttonLabel="Adjust"
-              onSubmit={handleAdjust}
-              loading={adjusting}
-              disabled={newCount === "" || Number(newCount) < 0}
-              accent={COLORS.indigo}
-            />
           </div>
-        </Section>
 
-        {/* Stock history */}
-        <Section title="Stock history">
-          {historyLoading ? (
-            <div style={{ padding: "24px 0", textAlign: "center", color: COLORS.slateLight, fontSize: 12 }}>
-              Loading history…
+          <div>
+            <SectionTitle>Stock actions</SectionTitle>
+            <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+              <StockActionRow
+                icon="ti-square-plus"
+                placeholder="Qty to add"
+                value={restockQty}
+                onChange={setRestockQty}
+                onSubmit={handleRestock}
+                loading={restocking}
+                label="Restock"
+                color={COLOR.success}
+              />
+              <StockActionRow
+                icon="ti-square-minus"
+                placeholder="Qty to consume"
+                value={consumeQty}
+                onChange={setConsumeQty}
+                onSubmit={handleConsume}
+                loading={consuming}
+                label="Consume"
+                color={COLOR.danger}
+              />
+              <StockActionRow
+                icon="ti-adjustments"
+                placeholder="New count"
+                value={adjustQty}
+                onChange={setAdjustQty}
+                onSubmit={handleAdjust}
+                loading={adjusting}
+                label="Adjust"
+                color={COLOR.accent}
+              />
             </div>
-          ) : history.length === 0 ? (
-            <div style={{ padding: "24px 0", textAlign: "center", color: COLORS.slateLight, fontSize: 12 }}>
-              No stock movements yet.
-            </div>
-          ) : (
-            <div style={{ display: "flex", flexDirection: "column" }}>
+          </div>
+
+          <div>
+            <SectionTitle>Stock history</SectionTitle>
+            <div
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                border: `1px solid ${COLOR.borderSubtle}`,
+                borderRadius: 10,
+                overflow: "hidden",
+              }}
+            >
+              {history.length === 0 && (
+                <p style={{ fontSize: 12.5, color: COLOR.textTertiary, margin: 0, padding: 16 }}>No stock movements yet.</p>
+              )}
               {history.map((m, i) => (
                 <div
                   key={m._id}
                   style={{
                     display: "flex",
-                    alignItems: "center",
                     justifyContent: "space-between",
-                    gap: 12,
-                    padding: "13px 4px",
-                    borderTop: i === 0 ? "none" : `1px solid ${COLORS.border}`,
+                    alignItems: "center",
+                    padding: "12px 16px",
+                    borderTop: i === 0 ? "none" : `1px solid ${COLOR.borderSubtle}`,
+                    fontSize: 12.5,
                   }}
                 >
-                  <div style={{ minWidth: 0 }}>
-                    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                      <span
-                        style={{
-                          width: 7,
-                          height: 7,
-                          borderRadius: 99,
-                          background: MOVEMENT_COLOR[m.type],
-                          flexShrink: 0,
-                        }}
-                      />
-                      <span style={{ fontSize: 13, fontWeight: 700, color: COLORS.ink }}>
-                        {MOVEMENT_LABEL[m.type]}
-                      </span>
-                    </div>
-                    <p
-                      style={{
-                        fontSize: 11.5,
-                        color: COLORS.slateLight,
-                        margin: "3px 0 0 15px",
-                        overflow: "hidden",
-                        textOverflow: "ellipsis",
-                        whiteSpace: "nowrap",
-                      }}
-                    >
-                      {m.reason ?? (m.referenceType === "maintenance_request" ? "Used on a work order" : "Manual entry")}
-                      {m.performedByName ? ` · ${m.performedByName}` : ""}
-                    </p>
+                  <div>
+                    <p style={{ margin: 0, fontWeight: 600, color: COLOR.textPrimary, textTransform: "capitalize" }}>{m.type}</p>
+                    <p style={{ margin: 0, color: COLOR.textTertiary }}>{m.reason || "—"}</p>
                   </div>
-                  <div style={{ textAlign: "right", flexShrink: 0 }}>
-                    <div
-                      style={{
-                        fontSize: 13,
-                        fontWeight: 700,
-                        color: m.quantityDelta >= 0 ? COLORS.green : COLORS.red,
-                      }}
-                    >
+                  <div style={{ textAlign: "right" }}>
+                    <p style={{ margin: 0, fontWeight: 700, fontFamily: MONO, color: m.quantityDelta >= 0 ? COLOR.success : COLOR.danger }}>
                       {m.quantityDelta >= 0 ? "+" : ""}
                       {m.quantityDelta}
-                    </div>
-                    <div style={{ fontSize: 10.5, color: COLORS.slateLight, marginTop: 2 }}>
-                      {formatDate(m.createdAt)}
-                    </div>
+                    </p>
+                    <p style={{ margin: 0, color: COLOR.textTertiary }}>{formatDate(m.createdAt)}</p>
                   </div>
                 </div>
               ))}
             </div>
-          )}
-        </Section>
+          </div>
+        </div>
+
+        {/* Right column */}
+        <div style={{ display: "flex", flexDirection: "column", gap: 26, minWidth: 0 }}>
+          <div>
+            <SectionTitle>Linked equipment</SectionTitle>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 12 }}>
+              {part.linkedEquipmentIds.length === 0 && (
+                <div style={{ padding: 16, border: `1px dashed ${COLOR.border}`, borderRadius: 10, textAlign: "center" }}>
+                  <p style={{ fontSize: 12.5, color: COLOR.textTertiary, margin: 0 }}>No equipment linked yet.</p>
+                </div>
+              )}
+              {part.linkedEquipmentIds.map((eqId) => {
+                const eq = equipmentOptions.find((e) => e.id === eqId);
+                return (
+                  <div
+                    key={eqId}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "space-between",
+                      padding: "10px 12px",
+                      background: COLOR.bg,
+                      border: `1px solid ${COLOR.borderSubtle}`,
+                      borderRadius: 8,
+                      fontSize: 12.5,
+                    }}
+                  >
+                    <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                      <i className="ti ti-tool" style={{ fontSize: 13, color: COLOR.accent }} aria-hidden="true" />
+                      {eq?.name ?? `Equipment #${eqId}`}
+                    </span>
+                    <button
+                      onClick={() => handleUnlink(eqId)}
+                      style={{ border: "none", background: "transparent", color: COLOR.textTertiary, cursor: "pointer" }}
+                    >
+                      <i className="ti ti-x" style={{ fontSize: 13 }} aria-hidden="true" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <select
+                value={equipmentToLink}
+                onChange={(e) => setEquipmentToLink(e.target.value)}
+                style={{ flex: 1, padding: "8px 10px", borderRadius: 8, border: `1px solid ${COLOR.border}`, fontSize: 12.5 }}
+              >
+                <option value="">Select equipment…</option>
+                {equipmentOptions
+                  .filter((e) => !part.linkedEquipmentIds.includes(e.id))
+                  .map((e) => (
+                    <option key={e.id} value={e.id}>
+                      {e.name}
+                    </option>
+                  ))}
+              </select>
+              <button
+                onClick={handleLink}
+                disabled={!equipmentToLink}
+                style={{
+                  padding: "8px 14px",
+                  borderRadius: 8,
+                  border: "none",
+                  background: equipmentToLink ? COLOR.accentSurface : COLOR.borderSubtle,
+                  color: equipmentToLink ? COLOR.accent : COLOR.textTertiary,
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  cursor: equipmentToLink ? "pointer" : "default",
+                }}
+              >
+                Link
+              </button>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-// ── Subcomponents ─────────────────────────────────────────────────────────────
-
-function StatCard({ label, value, highlight }: { label: string; value: string; highlight?: boolean }) {
+function StatCell({ label, value, accent }: { label: string; value: string; accent?: string }) {
   return (
-    <div
+    <div style={{ background: COLOR.surface, padding: "14px 20px" }}>
+      <p style={{ margin: "0 0 4px", fontSize: 10.5, color: COLOR.textTertiary, textTransform: "uppercase", letterSpacing: "0.04em" }}>
+        {label}
+      </p>
+      <p style={{ margin: 0, fontSize: 15, fontWeight: 700, fontFamily: MONO, color: accent ?? COLOR.textPrimary }}>{value}</p>
+    </div>
+  );
+}
+
+function Field({ label, value }: { label: string; value: string }) {
+  return (
+    <div>
+      <p style={{ margin: "0 0 2px", fontSize: 11, color: COLOR.textTertiary, textTransform: "uppercase", letterSpacing: "0.03em" }}>
+        {label}
+      </p>
+      <p style={{ margin: 0, fontSize: 13, fontWeight: 600, color: COLOR.textPrimary }}>{value}</p>
+    </div>
+  );
+}
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <h3
       style={{
-        padding: "14px 16px",
-        borderRadius: 12,
-        border: `1.5px solid ${highlight ? COLORS.redBorder : COLORS.border}`,
-        background: highlight ? COLORS.redBg : COLORS.bg,
-        minWidth: 0,
+        fontSize: 11.5,
+        fontWeight: 700,
+        color: COLOR.textTertiary,
+        textTransform: "uppercase",
+        letterSpacing: "0.04em",
+        margin: "0 0 10px",
       }}
     >
-      <div
-        style={{
-          fontSize: 10,
-          fontWeight: 700,
-          letterSpacing: "0.06em",
-          textTransform: "uppercase",
-          color: highlight ? COLORS.red : COLORS.slateLight,
-          marginBottom: 6,
-          display: "flex",
-          alignItems: "center",
-          gap: 4,
-        }}
-      >
-        {highlight && <AlertTriangle size={10} strokeWidth={2.5} />}
-        {label}
-      </div>
-      <div
-        style={{
-          fontSize: 17,
-          fontWeight: 700,
-          color: highlight ? COLORS.red : COLORS.ink,
-          letterSpacing: "-0.02em",
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {value}
-      </div>
-    </div>
-  );
-}
-
-function Section({ title, children }: { title: string; children: React.ReactNode }) {
-  return (
-    <div style={{ marginBottom: 24 }}>
-      <h2
-        style={{
-          fontSize: 11,
-          fontWeight: 700,
-          letterSpacing: "0.07em",
-          textTransform: "uppercase",
-          color: COLORS.slateLight,
-          margin: "0 0 12px",
-        }}
-      >
-        {title}
-      </h2>
-      <div
-        style={{
-          background: "#fff",
-          border: `1px solid ${COLORS.border}`,
-          borderRadius: 14,
-          padding: 18,
-          boxShadow: "0 1px 3px rgba(15,23,42,0.03)",
-        }}
-      >
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function Field({ label, value }: { label: string; value: string | number }) {
-  return (
-    <div style={{ minWidth: 0 }}>
-      <div
-        style={{
-          fontSize: 9.5,
-          fontWeight: 700,
-          letterSpacing: "0.06em",
-          textTransform: "uppercase",
-          color: COLORS.slateLight,
-          marginBottom: 4,
-        }}
-      >
-        {label}
-      </div>
-      <div
-        style={{
-          fontSize: 13,
-          fontWeight: 600,
-          color: COLORS.ink,
-          overflow: "hidden",
-          textOverflow: "ellipsis",
-          whiteSpace: "nowrap",
-        }}
-      >
-        {value}
-      </div>
-    </div>
+      {children}
+    </h3>
   );
 }
 
 function StockActionRow({
   icon,
-  iconBg,
   placeholder,
   value,
   onChange,
-  buttonLabel,
   onSubmit,
   loading,
-  disabled,
-  accent,
+  label,
+  color,
 }: {
-  icon: React.ReactNode;
-  iconBg: string;
+  icon: string;
   placeholder: string;
   value: string;
   onChange: (v: string) => void;
-  buttonLabel: string;
   onSubmit: () => void;
   loading: boolean;
-  disabled: boolean;
-  accent: string;
+  label: string;
+  color: string;
 }) {
-  const isDisabled = disabled || loading;
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-      <div
-        style={{
-          width: 30,
-          height: 30,
-          borderRadius: 8,
-          background: iconBg,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          flexShrink: 0,
-        }}
-      >
-        {icon}
+    <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 6, flex: 1 }}>
+        <i className={`ti ${icon}`} style={{ fontSize: 15, color }} aria-hidden="true" />
+        <input
+          type="number"
+          min={0}
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          placeholder={placeholder}
+          style={{
+            flex: 1,
+            padding: "8px 10px",
+            borderRadius: 8,
+            border: `1px solid ${COLOR.border}`,
+            fontSize: 12.5,
+            outline: "none",
+            fontFamily: MONO,
+          }}
+        />
       </div>
-      <input
-        type="number"
-        min={0}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && !isDisabled && onSubmit()}
-        placeholder={placeholder}
-        style={{
-          flex: 1,
-          minWidth: 0,
-          height: 38,
-          borderRadius: 9,
-          border: `1.5px solid ${COLORS.borderStrong}`,
-          padding: "0 12px",
-          fontSize: 13,
-          color: COLORS.ink,
-          outline: "none",
-        }}
-      />
       <button
         onClick={onSubmit}
-        disabled={isDisabled}
+        disabled={loading || !value}
         style={{
-          display: "flex",
-          alignItems: "center",
-          gap: 6,
-          padding: "0 18px",
-          height: 38,
-          borderRadius: 9,
+          padding: "8px 14px",
+          borderRadius: 8,
           border: "none",
-          background: isDisabled ? "#E2E8F0" : accent,
-          color: isDisabled ? "#94A3B8" : "#fff",
+          background: loading || !value ? COLOR.borderSubtle : `${color}18`,
+          color: loading || !value ? COLOR.textTertiary : color,
           fontSize: 12.5,
-          fontWeight: 700,
-          cursor: isDisabled ? "default" : "pointer",
+          fontWeight: 600,
+          cursor: loading || !value ? "default" : "pointer",
           whiteSpace: "nowrap",
-          flexShrink: 0,
-          transition: "opacity 0.15s",
         }}
       >
-        {loading && <Loader2 size={13} className="animate-spin" />}
-        {buttonLabel}
+        {loading ? "Saving…" : label}
       </button>
+    </div>
+  );
+}
+
+// ─── New part modal ───────────────────────────────────────────────────────────
+
+function NewPartModal({
+  open,
+  onClose,
+  categories,
+  onCreated,
+}: {
+  open: boolean;
+  onClose: () => void;
+  categories: { id: number; name: string }[];
+  onCreated: () => void;
+}) {
+  const [form, setForm] = useState<CreatePartInput>(EMPTY_PART_FORM);
+  const [createPart, { isLoading }] = useCreatePartMutation();
+
+  if (!open) return null;
+
+  const set = <K extends keyof CreatePartInput>(key: K, value: CreatePartInput[K]) =>
+    setForm((f) => ({ ...f, [key]: value }));
+
+  const handleSubmit = async () => {
+    if (!form.name.trim()) return;
+    await createPart(form).unwrap();
+    setForm(EMPTY_PART_FORM);
+    onCreated();
+    onClose();
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(20,24,31,0.45)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 50,
+      }}
+    >
+      <div
+        style={{
+          width: 460,
+          maxHeight: "85vh",
+          overflowY: "auto",
+          background: COLOR.surface,
+          borderRadius: 14,
+          padding: 24,
+          boxShadow: "0 20px 50px rgba(20,24,31,0.25)",
+        }}
+      >
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 18 }}>
+          <h2 style={{ fontSize: 16, fontWeight: 700, color: COLOR.textPrimary, margin: 0 }}>New Part</h2>
+          <button onClick={onClose} style={{ border: "none", background: "transparent", cursor: "pointer" }}>
+            <i className="ti ti-x" style={{ fontSize: 16, color: COLOR.textTertiary }} aria-hidden="true" />
+          </button>
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
+          <ModalInput label="Name *" value={form.name} onChange={(v) => set("name", v)} />
+          <ModalInput label="Part number" value={form.partNumber ?? ""} onChange={(v) => set("partNumber", v || null)} />
+
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: COLOR.textSecondary, display: "block", marginBottom: 4 }}>
+              Category
+            </label>
+            <select
+              value={form.category ?? ""}
+              onChange={(e) => set("category", e.target.value || null)}
+              style={{ width: "100%", padding: "9px 10px", borderRadius: 8, border: `1px solid ${COLOR.border}`, fontSize: 13 }}
+            >
+              <option value="">No category</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.name}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div style={{ display: "flex", gap: 10 }}>
+            <ModalInput
+              label="Initial qty"
+              type="number"
+              value={String(form.quantityOnHand ?? 0)}
+              onChange={(v) => set("quantityOnHand", Number(v) || 0)}
+            />
+            <ModalInput label="Unit" value={form.unitOfMeasure ?? "pcs"} onChange={(v) => set("unitOfMeasure", v)} />
+          </div>
+
+          <div style={{ display: "flex", gap: 10 }}>
+            <ModalInput
+              label="Min quantity"
+              type="number"
+              value={String(form.minQuantity ?? 0)}
+              onChange={(v) => set("minQuantity", Number(v) || 0)}
+            />
+            <ModalInput
+              label="Unit cost"
+              type="number"
+              value={String(form.unitCost ?? 0)}
+              onChange={(v) => set("unitCost", Number(v) || 0)}
+            />
+          </div>
+
+          <ModalInput label="Vendor" value={form.vendor ?? ""} onChange={(v) => set("vendor", v || null)} />
+          <ModalInput label="Location" value={form.location ?? ""} onChange={(v) => set("location", v || null)} />
+          <ModalInput label="Barcode" value={form.barcode ?? ""} onChange={(v) => set("barcode", v || null)} />
+
+          <div>
+            <label style={{ fontSize: 12, fontWeight: 600, color: COLOR.textSecondary, display: "block", marginBottom: 4 }}>
+              Description
+            </label>
+            <textarea
+              value={form.description ?? ""}
+              onChange={(e) => set("description", e.target.value || null)}
+              rows={3}
+              style={{
+                width: "100%",
+                padding: "9px 10px",
+                borderRadius: 8,
+                border: `1px solid ${COLOR.border}`,
+                fontSize: 13,
+                resize: "vertical",
+                boxSizing: "border-box",
+              }}
+            />
+          </div>
+        </div>
+
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 10, marginTop: 20 }}>
+          <button onClick={onClose} style={buttonStyle("ghost")}>
+            Cancel
+          </button>
+          <button
+            onClick={handleSubmit}
+            disabled={isLoading || !form.name.trim()}
+            style={{ ...buttonStyle("primary"), opacity: isLoading || !form.name.trim() ? 0.6 : 1 }}
+          >
+            {isLoading ? "Creating…" : "Create Part"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ModalInput({
+  label,
+  value,
+  onChange,
+  type = "text",
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  type?: string;
+}) {
+  return (
+    <div style={{ flex: 1 }}>
+      <label style={{ fontSize: 12, fontWeight: 600, color: COLOR.textSecondary, display: "block", marginBottom: 4 }}>
+        {label}
+      </label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        style={{
+          width: "100%",
+          padding: "9px 10px",
+          borderRadius: 8,
+          border: `1px solid ${COLOR.border}`,
+          fontSize: 13,
+          outline: "none",
+          boxSizing: "border-box",
+        }}
+      />
     </div>
   );
 }
