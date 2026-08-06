@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
 import { useMemo, useState } from "react";
@@ -13,35 +14,49 @@ import {
   Trash2,
   Search,
   ChevronDown,
+  ChevronRight,
+  RefreshCw,
+  Loader,
+  AlertCircle,
+  ShoppingCart,
 } from "lucide-react";
-import { PurchaseOrderStatus, PurchaseOrderListItem, useGetAllPurchaseOrdersQuery, useDeletePurchaseOrderMutation, useApprovePurchaseOrderMutation, useDeclinePurchaseOrderMutation, useMarkPurchaseOrderAsOrderedMutation, useCancelPurchaseOrderMutation, useCreatePurchaseOrderMutation, useUpdatePurchaseOrderMutation, PurchaseOrderFormInput, EMPTY_PURCHASE_ORDER_FORM, LineItemInput, useFulfillPurchaseOrderItemsMutation, FulfillItemInput } from "@/redux/purchase-orders/Purchaseorderapi";
+import {
+  PurchaseOrderStatus,
+  PurchaseOrderListItem,
+  useGetAllPurchaseOrdersQuery,
+  useDeletePurchaseOrderMutation,
+  useApprovePurchaseOrderMutation,
+  useDeclinePurchaseOrderMutation,
+  useMarkPurchaseOrderAsOrderedMutation,
+  useCancelPurchaseOrderMutation,
+  useCreatePurchaseOrderMutation,
+  useUpdatePurchaseOrderMutation,
+  PurchaseOrderFormInput,
+  EMPTY_PURCHASE_ORDER_FORM,
+  LineItemInput,
+  useFulfillPurchaseOrderItemsMutation,
+  FulfillItemInput,
+} from "@/redux/purchase-orders/Purchaseorderapi";
+import { WorkOrderSidebar } from "@/component/Sidebar";
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Tokens — same indigo/violet language as the Work Orders / Support Tickets pages
+// ─────────────────────────────────────────────────────────────────────────────
 
-
-// ── Constants ─────────────────────────────────────────────────────────────────
-
-const STATUS_STYLES: Record<PurchaseOrderStatus, string> = {
-  requested: "bg-amber-50 text-amber-700 border-amber-200",
-  declined: "bg-rose-50 text-rose-700 border-rose-200",
-  approved: "bg-blue-50 text-blue-700 border-blue-200",
-  ordered: "bg-indigo-50 text-indigo-700 border-indigo-200",
-  partially_fulfilled: "bg-violet-50 text-violet-700 border-violet-200",
-  fulfilled: "bg-emerald-50 text-emerald-700 border-emerald-200",
-  cancelled: "bg-slate-100 text-slate-500 border-slate-200",
+const PO_STATUS_CONFIG: Record<
+  PurchaseOrderStatus,
+  { bg: string; text: string; border: string; dot: string; label: string }
+> = {
+  requested: { bg: "#FFFBEB", text: "#B45309", border: "#FDE68A", dot: "#F59E0B", label: "Requested" },
+  declined: { bg: "#FFF1F2", text: "#BE123C", border: "#FECDD3", dot: "#F43F5E", label: "Declined" },
+  approved: { bg: "#EFF6FF", text: "#1D4ED8", border: "#BFDBFE", dot: "#3B82F6", label: "Approved" },
+  ordered: { bg: "#EEF2FF", text: "#4338CA", border: "#C7D2FE", dot: "#6366F1", label: "Ordered" },
+  partially_fulfilled: { bg: "#F5F3FF", text: "#6D28D9", border: "#DDD6FE", dot: "#8B5CF6", label: "Partially fulfilled" },
+  fulfilled: { bg: "#ECFDF5", text: "#047857", border: "#A7F3D0", dot: "#10B981", label: "Fulfilled" },
+  cancelled: { bg: "#F1F5F9", text: "#64748B", border: "#E2E8F0", dot: "#94A3B8", label: "Cancelled" },
 };
 
-const STATUS_LABELS: Record<PurchaseOrderStatus, string> = {
-  requested: "Requested",
-  declined: "Declined",
-  approved: "Approved",
-  ordered: "Ordered",
-  partially_fulfilled: "Partially fulfilled",
-  fulfilled: "Fulfilled",
-  cancelled: "Cancelled",
-};
-
-const STATUS_FILTERS: (PurchaseOrderStatus | "all")[] = [
-  "all",
+const STATUS_ORDER: PurchaseOrderStatus[] = [
   "requested",
   "approved",
   "ordered",
@@ -56,10 +71,117 @@ function currency(n: number | undefined) {
   return n.toLocaleString(undefined, { style: "currency", currency: "USD" });
 }
 
-// ── Page ─────────────────────────────────────────────────────────────────────
+function initials(name: string) {
+  return name
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]?.toUpperCase())
+    .join("");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Small building blocks
+// ─────────────────────────────────────────────────────────────────────────────
+
+function StatusBadge({ status }: { status: PurchaseOrderStatus }) {
+  const c = PO_STATUS_CONFIG[status];
+  return (
+    <span
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        borderRadius: 999,
+        border: `1.5px solid ${c.border}`,
+        padding: "5px 10px",
+        fontSize: 12,
+        fontWeight: 600,
+        background: c.bg,
+        color: c.text,
+      }}
+    >
+      <span style={{ width: 6, height: 6, borderRadius: "50%", background: c.dot }} />
+      {c.label}
+    </span>
+  );
+}
+
+function Avatar({ name }: { name: string }) {
+  return (
+    <div
+      style={{
+        width: 32,
+        height: 32,
+        borderRadius: "50%",
+        background: "linear-gradient(135deg, #6366F1, #8B5CF6)",
+        color: "#fff",
+        fontSize: 11,
+        fontWeight: 700,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        flexShrink: 0,
+      }}
+    >
+      {initials(name) || "?"}
+    </div>
+  );
+}
+
+function StatChip({
+  label,
+  value,
+  dotColor,
+  active,
+  onClick,
+}: {
+  label: string;
+  value: number;
+  dotColor?: string;
+  active: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 7,
+        padding: "7px 14px",
+        borderRadius: 10,
+        fontSize: 12,
+        fontWeight: 600,
+        border: active ? "1.5px solid #C7D2FE" : "1.5px solid #E5E7EB",
+        background: active ? "#EEF2FF" : "#fff",
+        color: active ? "#4338CA" : "#64748B",
+        cursor: "pointer",
+      }}
+    >
+      {dotColor && <span style={{ width: 6, height: 6, borderRadius: "50%", background: dotColor }} />}
+      {label}
+      <span
+        style={{
+          fontSize: 11,
+          fontWeight: 700,
+          padding: "1px 6px",
+          borderRadius: 999,
+          background: active ? "#C7D2FE55" : "#F1F5F9",
+          color: active ? "#4338CA" : "#94A3B8",
+        }}
+      >
+        {value}
+      </span>
+    </button>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Page
+// ─────────────────────────────────────────────────────────────────────────────
 
 export default function PurchaseOrdersPage() {
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const user = useSelector((state: any) => state.auth?.user);
   const isAdmin = user?.role === "manager";
 
@@ -71,10 +193,14 @@ export default function PurchaseOrdersPage() {
   const [fulfillPO, setFulfillPO] = useState<PurchaseOrderListItem | null>(null);
   const [declinePOId, setDeclinePOId] = useState<number | null>(null);
 
-  const { data, isLoading, isFetching } = useGetAllPurchaseOrdersQuery({
+  const { data, isLoading, isFetching, isError, refetch } = useGetAllPurchaseOrdersQuery({
     status: statusFilter === "all" ? undefined : statusFilter,
     search: search || undefined,
   });
+
+  // Unfiltered set, purely to drive the status chip counts (mirrors the
+  // Support Tickets page pattern — RTK Query dedupes this against the cache).
+  const { data: allData } = useGetAllPurchaseOrdersQuery({});
 
   const [deletePurchaseOrder] = useDeletePurchaseOrderMutation();
   const [approvePurchaseOrder] = useApprovePurchaseOrderMutation();
@@ -83,104 +209,235 @@ export default function PurchaseOrdersPage() {
   const [cancelPurchaseOrder] = useCancelPurchaseOrderMutation();
 
   const orders = data?.data ?? [];
+  const allOrders = allData?.data ?? [];
+
+  const counts = useMemo(() => {
+    const base: Record<PurchaseOrderStatus | "all", number> = {
+      all: allOrders.length,
+      requested: 0,
+      declined: 0,
+      approved: 0,
+      ordered: 0,
+      partially_fulfilled: 0,
+      fulfilled: 0,
+      cancelled: 0,
+    };
+    for (const po of allOrders) base[po.status]++;
+    return base;
+  }, [allOrders]);
+
+  if (isLoading) {
+    return (
+      <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: "#F8FAFF" }}>
+        <WorkOrderSidebar />
+        <main style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center" }}>
+          <span style={{ fontSize: 13, color: "#94A3B8" }}>Loading purchase orders…</span>
+        </main>
+      </div>
+    );
+  }
+
+  if (isError) {
+    return (
+      <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: "#F8FAFF" }}>
+        <WorkOrderSidebar />
+        <main
+          style={{
+            flex: 1,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            gap: 12,
+            background: "#FFF5F5",
+          }}
+        >
+          <span style={{ fontSize: 13, color: "#DC2626" }}>Failed to load purchase orders.</span>
+          <button
+            onClick={() => refetch()}
+            style={{
+              padding: "8px 18px",
+              background: "linear-gradient(135deg, #6366F1, #8B5CF6)",
+              color: "#fff",
+              border: "none",
+              borderRadius: 9,
+              fontSize: 12,
+              fontWeight: 600,
+              cursor: "pointer",
+            }}
+          >
+            Try again
+          </button>
+        </main>
+      </div>
+    );
+  }
 
   return (
-    <div className="mx-auto max-w-7xl px-6 py-8">
-      <header className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-slate-900">Purchase Orders</h1>
-          <p className="mt-1 text-sm text-slate-500">
-            {isAdmin
-              ? "Request, approve, and fulfill orders from your vendors."
-              : "Request parts and track the status of your orders."}
-          </p>
-        </div>
-        <button
-          onClick={() => setCreateOpen(true)}
-          className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-800"
+    <div style={{ display: "flex", height: "100vh", overflow: "hidden", background: "#F8FAFF" }}>
+      <WorkOrderSidebar />
+      <main style={{ flex: 1, display: "flex", flexDirection: "column", overflow: "hidden" }}>
+        {/* Header */}
+        <div
+          style={{
+            background: "linear-gradient(135deg, #EEF2FF 0%, #F5F3FF 60%, #FAF5FF 100%)",
+            borderBottom: "2px solid #6366F122",
+            padding: "24px 32px",
+          }}
         >
-          <Plus className="h-4 w-4" />
-          {isAdmin ? "New purchase order" : "Request purchase order"}
-        </button>
-      </header>
+          <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 20, marginBottom: 18 }}>
+            <div>
+              <h1 style={{ fontSize: 22, fontWeight: 700, color: "#0F172A", margin: "0 0 4px", letterSpacing: "-0.03em" }}>
+                Purchase Orders
+              </h1>
+              <span style={{ fontSize: 12, color: "#64748B" }}>
+                {isAdmin
+                  ? "Request, approve, and fulfill orders from your vendors."
+                  : "Request parts and track the status of your orders."}
+              </span>
+            </div>
 
-      {/* Filters */}
-      <div className="mb-4 flex flex-wrap items-center gap-3">
-        <div className="relative">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-          <input
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search PO number or vendor…"
-            className="w-64 rounded-lg border border-slate-200 py-2 pl-9 pr-3 text-sm outline-none focus:border-slate-400"
-          />
-        </div>
-        <div className="flex flex-wrap gap-1.5">
-          {STATUS_FILTERS.map((s) => (
-            <button
-              key={s}
-              onClick={() => setStatusFilter(s)}
-              className={`rounded-full border px-3 py-1 text-xs font-medium transition ${
-                statusFilter === s
-                  ? "border-slate-900 bg-slate-900 text-white"
-                  : "border-slate-200 bg-white text-slate-600 hover:border-slate-300"
-              }`}
-            >
-              {s === "all" ? "All" : STATUS_LABELS[s]}
-            </button>
-          ))}
-        </div>
-      </div>
+            <div style={{ display: "flex", gap: 8 }}>
+              <button
+                onClick={() => refetch()}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "9px 16px",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: "#374151",
+                  background: "#fff",
+                  border: "1.5px solid #E0E7FF",
+                  borderRadius: 10,
+                  cursor: "pointer",
+                }}
+              >
+                <RefreshCw size={14} className={isFetching ? "animate-spin" : ""} />
+                Refresh
+              </button>
+              <button
+                onClick={() => setCreateOpen(true)}
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6,
+                  padding: "9px 16px",
+                  fontSize: 12,
+                  fontWeight: 600,
+                  color: "#fff",
+                  background: "linear-gradient(135deg, #6366F1, #8B5CF6)",
+                  border: "none",
+                  borderRadius: 10,
+                  cursor: "pointer",
+                  boxShadow: "0 4px 12px rgba(99,102,241,0.35)",
+                }}
+              >
+                <Plus size={14} />
+                {isAdmin ? "New purchase order" : "Request purchase order"}
+              </button>
+            </div>
+          </div>
 
-      {/* Table */}
-      <div className="overflow-hidden rounded-xl border border-slate-200 bg-white">
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-slate-200 bg-slate-50 text-xs uppercase tracking-wide text-slate-500">
-            <tr>
-              <th className="px-4 py-3 font-medium">PO #</th>
-              <th className="px-4 py-3 font-medium">Vendor</th>
-              <th className="px-4 py-3 font-medium">Status</th>
-              <th className="px-4 py-3 font-medium">Items</th>
-              {isAdmin && <th className="px-4 py-3 font-medium">Total</th>}
-              <th className="px-4 py-3 font-medium">Requested by</th>
-              <th className="px-4 py-3 font-medium"></th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {isLoading ? (
-              <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-slate-400">
-                  Loading purchase orders…
-                </td>
-              </tr>
-            ) : orders.length === 0 ? (
-              <tr>
-                <td colSpan={7} className="px-4 py-10 text-center text-slate-400">
-                  No purchase orders yet. Create one to get started.
-                </td>
-              </tr>
-            ) : (
-              orders.map((po) => (
-                <tr
+          {/* Status filter chips */}
+          <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginBottom: 14 }}>
+            <StatChip label="All" value={counts.all} active={statusFilter === "all"} onClick={() => setStatusFilter("all")} />
+            {STATUS_ORDER.map((s) => (
+              <StatChip
+                key={s}
+                label={PO_STATUS_CONFIG[s].label}
+                value={counts[s]}
+                dotColor={PO_STATUS_CONFIG[s].dot}
+                active={statusFilter === s}
+                onClick={() => setStatusFilter(s)}
+              />
+            ))}
+          </div>
+
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 8,
+              background: "#fff",
+              borderRadius: 10,
+              padding: "0 12px",
+              height: 36,
+              border: "1.5px solid #E0E7FF",
+              maxWidth: 360,
+            }}
+          >
+            <Search size={13} color="#A5B4FC" strokeWidth={2} />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search PO number or vendor…"
+              style={{ border: "none", background: "transparent", fontSize: 12, color: "#0F172A", outline: "none", width: "100%" }}
+            />
+          </div>
+        </div>
+
+        {/* Table */}
+        <div style={{ flex: 1, overflowY: "auto", padding: "24px 32px" }}>
+          {orders.length === 0 ? (
+            <div style={{ textAlign: "center", padding: "80px 20px", color: "#94A3B8", fontSize: 13 }}>
+              <ShoppingCart size={22} style={{ marginBottom: 8 }} />
+              <div>No purchase orders yet. Create one to get started.</div>
+            </div>
+          ) : (
+            <div style={{ background: "#fff", border: "1px solid #E8EAFF", borderRadius: 14, overflow: "hidden", boxShadow: "0 1px 4px rgba(99,102,241,0.06)" }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: isAdmin ? "1fr 1.6fr 1.3fr 0.7fr 0.9fr 1.3fr 0.4fr 0.4fr" : "1fr 1.6fr 1.3fr 0.7fr 1.3fr 0.4fr",
+                  padding: "12px 20px",
+                  background: "#FAFBFF",
+                  borderBottom: "1px solid #E8EAFF",
+                }}
+              >
+                {(isAdmin
+                  ? ["PO #", "Vendor", "Status", "Items", "Total", "Requested by", "", ""]
+                  : ["PO #", "Vendor", "Status", "Items", "Requested by", ""]
+                ).map((h, i) => (
+                  <span key={i} style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.08em", textTransform: "uppercase", color: "#94A3B8" }}>
+                    {h}
+                  </span>
+                ))}
+              </div>
+
+              {orders.map((po) => (
+                <div
                   key={po.id}
                   onClick={() => setDetailPO(po)}
-                  className="cursor-pointer transition hover:bg-slate-50"
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: isAdmin ? "1fr 1.6fr 1.3fr 0.7fr 0.9fr 1.3fr 0.4fr 0.4fr" : "1fr 1.6fr 1.3fr 0.7fr 1.3fr 0.4fr",
+                    alignItems: "center",
+                    padding: "14px 20px",
+                    borderBottom: "1px solid #F0F4FF",
+                    cursor: "pointer",
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = "#FAFBFF")}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
                 >
-                  <td className="px-4 py-3 font-medium text-slate-900">{po.poNumber}</td>
-                  <td className="px-4 py-3 text-slate-600">{po.vendor ?? "—"}</td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLES[po.status]}`}
-                    >
-                      {STATUS_LABELS[po.status]}
+                  <span style={{ fontSize: 13, fontWeight: 600, color: "#0F172A" }}>{po.poNumber}</span>
+                  <span style={{ fontSize: 13, color: "#334155", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                    {po.vendor ?? "—"}
+                  </span>
+                  <div>
+                    <StatusBadge status={po.status} />
+                  </div>
+                  <span style={{ fontSize: 13, color: "#64748B" }}>{po.items.length}</span>
+                  {isAdmin && <span style={{ fontSize: 13, color: "#64748B" }}>{currency(po.totalCost)}</span>}
+                  <div style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+                    <Avatar name={po.createdByName} />
+                    <span style={{ fontSize: 12, color: "#64748B", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                      {po.createdByName}
                     </span>
-                  </td>
-                  <td className="px-4 py-3 text-slate-600">{po.items.length}</td>
-                  {isAdmin && (
-                    <td className="px-4 py-3 text-slate-600">{currency(po.totalCost)}</td>
-                  )}
-                  <td className="px-4 py-3 text-slate-600">{po.createdByName}</td>
-                  <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                  </div>
+                  <div onClick={(e) => e.stopPropagation()}>
                     <RowActions
                       po={po}
                       isAdmin={isAdmin}
@@ -192,21 +449,19 @@ export default function PurchaseOrdersPage() {
                       onCancel={() => cancelPurchaseOrder(po.id)}
                       onFulfill={() => setFulfillPO(po)}
                     />
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-        {isFetching && !isLoading && (
-          <div className="border-t border-slate-100 px-4 py-2 text-xs text-slate-400">
-            Refreshing…
-          </div>
-        )}
-      </div>
+                  </div>
+                  <div style={{ textAlign: "right" }}>
+                    <ChevronRight size={14} color="#CBD5E1" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      </main>
 
       {(isCreateOpen || editingPO) && (
-        <PurchaseOrderFormModal
+        <PurchaseOrderFormDrawer
           existing={editingPO}
           onClose={() => {
             setCreateOpen(false);
@@ -215,11 +470,9 @@ export default function PurchaseOrdersPage() {
         />
       )}
 
-      {detailPO && <PurchaseOrderDetailModal po={detailPO} isAdmin={isAdmin} onClose={() => setDetailPO(null)} />}
+      {detailPO && <PurchaseOrderDrawer po={detailPO} isAdmin={isAdmin} onClose={() => setDetailPO(null)} />}
 
-      {fulfillPO && (
-        <FulfillItemsModal po={fulfillPO} onClose={() => setFulfillPO(null)} />
-      )}
+      {fulfillPO && <FulfillItemsModal po={fulfillPO} onClose={() => setFulfillPO(null)} />}
 
       {declinePOId !== null && (
         <DeclineModal
@@ -230,11 +483,15 @@ export default function PurchaseOrdersPage() {
           }}
         />
       )}
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } } .animate-spin { animation: spin 0.7s linear infinite; }`}</style>
     </div>
   );
 }
 
-// ── Row actions ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Row actions dropdown
+// ─────────────────────────────────────────────────────────────────────────────
 
 function RowActions({
   po,
@@ -263,21 +520,35 @@ function RowActions({
   if (!isAdmin) return null;
 
   return (
-    <div className="relative flex justify-end">
+    <div style={{ position: "relative", display: "flex", justifyContent: "flex-end" }}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-600"
+        style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", padding: 6, borderRadius: 8, display: "flex" }}
       >
-        <ChevronDown className="h-4 w-4" />
+        <ChevronDown size={15} />
       </button>
       {open && (
         <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-8 z-20 w-48 rounded-lg border border-slate-200 bg-white py-1 shadow-lg">
+          <div style={{ position: "fixed", inset: 0, zIndex: 10 }} onClick={() => setOpen(false)} />
+          <div
+            style={{
+              position: "absolute",
+              right: 0,
+              top: 30,
+              zIndex: 20,
+              width: 190,
+              borderRadius: 12,
+              border: "1px solid #E8EAFF",
+              background: "#fff",
+              padding: "6px 0",
+              boxShadow: "0 12px 32px rgba(15,23,42,0.14)",
+            }}
+          >
             {po.status === "requested" && (
               <>
                 <MenuItem icon={Check} label="Approve" onClick={() => { onApprove(); setOpen(false); }} />
                 <MenuItem icon={Ban} label="Decline" onClick={() => { onDecline(); setOpen(false); }} />
+                <MenuItem icon={Pencil} label="Edit" onClick={() => { onEdit(); setOpen(false); }} />
               </>
             )}
             {po.status === "approved" && (
@@ -289,18 +560,10 @@ function RowActions({
             {(po.status === "ordered" || po.status === "partially_fulfilled") && (
               <MenuItem icon={PackageCheck} label="Fulfill items" onClick={() => { onFulfill(); setOpen(false); }} />
             )}
-            {po.status === "requested" && (
-              <MenuItem icon={Pencil} label="Edit" onClick={() => { onEdit(); setOpen(false); }} />
-            )}
             {canCancel && !["cancelled", "declined", "fulfilled"].includes(po.status) && (
               <MenuItem icon={Ban} label="Cancel" onClick={() => { onCancel(); setOpen(false); }} />
             )}
-            <MenuItem
-              icon={Trash2}
-              label="Delete"
-              danger
-              onClick={() => { onDelete(); setOpen(false); }}
-            />
+            <MenuItem icon={Trash2} label="Delete" danger onClick={() => { onDelete(); setOpen(false); }} />
           </div>
         </>
       )}
@@ -322,19 +585,184 @@ function MenuItem({
   return (
     <button
       onClick={onClick}
-      className={`flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition hover:bg-slate-50 ${
-        danger ? "text-rose-600" : "text-slate-700"
-      }`}
+      style={{
+        display: "flex",
+        width: "100%",
+        alignItems: "center",
+        gap: 8,
+        padding: "8px 14px",
+        fontSize: 12.5,
+        fontWeight: 600,
+        color: danger ? "#DC2626" : "#374151",
+        background: "none",
+        border: "none",
+        textAlign: "left",
+        cursor: "pointer",
+      }}
+      onMouseEnter={(e) => (e.currentTarget.style.background = "#FAFBFF")}
+      onMouseLeave={(e) => (e.currentTarget.style.background = "transparent")}
     >
-      <Icon className="h-3.5 w-3.5" />
+      <Icon size={13.5} />
       {label}
     </button>
   );
 }
 
-// ── Create / edit modal ───────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Shared: field / input styles
+// ─────────────────────────────────────────────────────────────────────────────
 
-function PurchaseOrderFormModal({
+const fieldLabelStyle: React.CSSProperties = {
+  display: "block",
+  fontSize: 10,
+  fontWeight: 700,
+  letterSpacing: "0.08em",
+  textTransform: "uppercase",
+  color: "#94A3B8",
+  marginBottom: 8,
+};
+
+const inputStyle: React.CSSProperties = {
+  width: "100%",
+  boxSizing: "border-box",
+  padding: "9px 12px",
+  fontSize: 13,
+  color: "#0F172A",
+  background: "#FAFBFF",
+  border: "1.5px solid #E8EAFF",
+  borderRadius: 9,
+  outline: "none",
+  fontFamily: "inherit",
+};
+
+function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <label style={{ display: "block" }}>
+      <span style={fieldLabelStyle}>{label}</span>
+      {children}
+    </label>
+  );
+}
+
+function PrimaryButton({
+  children,
+  onClick,
+  type = "button",
+  disabled,
+  danger,
+}: {
+  children: React.ReactNode;
+  onClick?: () => void;
+  type?: "button" | "submit";
+  disabled?: boolean;
+  danger?: boolean;
+}) {
+  return (
+    <button
+      type={type}
+      onClick={onClick}
+      disabled={disabled}
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+        gap: 6,
+        padding: "9px 18px",
+        fontSize: 12.5,
+        fontWeight: 600,
+        color: "#fff",
+        background: disabled ? "#A5B4FC" : danger ? "#E11D48" : "linear-gradient(135deg, #6366F1, #8B5CF6)",
+        border: "none",
+        borderRadius: 9,
+        cursor: disabled ? "not-allowed" : "pointer",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+function SecondaryButton({ children, onClick }: { children: React.ReactNode; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      style={{
+        padding: "9px 18px",
+        fontSize: 12.5,
+        fontWeight: 600,
+        color: "#64748B",
+        background: "#fff",
+        border: "1.5px solid #E8EAFF",
+        borderRadius: 9,
+        cursor: "pointer",
+      }}
+    >
+      {children}
+    </button>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Slide-in drawer shell (matches the Support Tickets drawer)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function DrawerShell({
+  title,
+  subtitle,
+  onClose,
+  children,
+  footer,
+  wide,
+}: {
+  title: string;
+  subtitle?: string;
+  onClose: () => void;
+  children: React.ReactNode;
+  footer?: React.ReactNode;
+  wide?: boolean;
+}) {
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", justifyContent: "flex-end" }}>
+      <div style={{ position: "absolute", inset: 0, background: "rgba(15,23,42,0.4)" }} onClick={onClose} />
+      <div
+        style={{
+          position: "relative",
+          display: "flex",
+          flexDirection: "column",
+          height: "100%",
+          width: "100%",
+          maxWidth: wide ? 620 : 440,
+          background: "#fff",
+          boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", padding: "18px 22px", borderBottom: "1px solid #F0F4FF" }}>
+          <div>
+            {subtitle && <div style={{ fontSize: 11, color: "#94A3B8", fontFamily: "monospace" }}>{subtitle}</div>}
+            <h2 style={{ fontSize: 15, fontWeight: 700, color: "#0F172A", margin: "2px 0 0" }}>{title}</h2>
+          </div>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", padding: 4 }}>
+            <X size={16} />
+          </button>
+        </div>
+
+        <div style={{ flex: 1, overflowY: "auto", padding: "20px 22px" }}>{children}</div>
+
+        {footer && (
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, padding: "16px 22px", borderTop: "1px solid #F0F4FF" }}>
+            {footer}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Create / edit drawer
+// ─────────────────────────────────────────────────────────────────────────────
+
+function PurchaseOrderFormDrawer({
   existing,
   onClose,
 }: {
@@ -366,25 +794,18 @@ function PurchaseOrderFormModal({
   const isSaving = isCreating || isUpdating;
 
   function updateItem(index: number, patch: Partial<LineItemInput>) {
-    setForm((f) => ({
-      ...f,
-      items: f.items.map((it, i) => (i === index ? { ...it, ...patch } : it)),
-    }));
+    setForm((f) => ({ ...f, items: f.items.map((it, i) => (i === index ? { ...it, ...patch } : it)) }));
   }
 
   function addItem() {
-    setForm((f) => ({
-      ...f,
-      items: [...f.items, { partId: undefined, partName: "", quantityOrdered: 1, unitCost: 0 }],
-    }));
+    setForm((f) => ({ ...f, items: [...f.items, { partId: undefined, partName: "", quantityOrdered: 1, unitCost: 0 }] }));
   }
 
   function removeItem(index: number) {
     setForm((f) => ({ ...f, items: f.items.filter((_, i) => i !== index) }));
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSave() {
     if (existing) {
       await updatePurchaseOrder({ id: existing.id, data: form });
     } else {
@@ -394,117 +815,125 @@ function PurchaseOrderFormModal({
   }
 
   return (
-    <Modal title={existing ? "Edit purchase order" : "New purchase order"} onClose={onClose} wide>
-      <form onSubmit={handleSubmit} className="space-y-5">
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Vendor (optional)">
-            <input
-              value={form.vendor ?? ""}
-              onChange={(e) => setForm((f) => ({ ...f, vendor: e.target.value || null }))}
-              className="input"
-              placeholder="Acme Supply Co."
-            />
-          </Field>
-          <Field label="Vendor contact">
-            <input
-              value={form.vendorContact ?? ""}
-              onChange={(e) => setForm((f) => ({ ...f, vendorContact: e.target.value || null }))}
-              className="input"
-              placeholder="contact@acme.com"
-            />
-          </Field>
-        </div>
-
-        <div>
-          <div className="mb-2 flex items-center justify-between">
-            <label className="text-sm font-medium text-slate-700">Line items</label>
-            <button type="button" onClick={addItem} className="text-xs font-medium text-slate-500 hover:text-slate-900">
-              + Add item
-            </button>
-          </div>
-          <div className="space-y-2">
-            {form.items.map((item, i) => (
-              <div key={i} className="grid grid-cols-[1fr_90px_100px_28px] items-center gap-2">
-                <input
-                  value={item.partName ?? ""}
-                  onChange={(e) => updateItem(i, { partName: e.target.value })}
-                  placeholder="Part name (or one-off item)"
-                  className="input"
-                />
-                <input
-                  type="number"
-                  min={1}
-                  value={item.quantityOrdered}
-                  onChange={(e) => updateItem(i, { quantityOrdered: Number(e.target.value) })}
-                  className="input"
-                  placeholder="Qty"
-                />
-                <input
-                  type="number"
-                  min={0}
-                  step="0.01"
-                  value={item.unitCost ?? 0}
-                  onChange={(e) => updateItem(i, { unitCost: Number(e.target.value) })}
-                  className="input"
-                  placeholder="Unit cost"
-                />
-                <button
-                  type="button"
-                  onClick={() => removeItem(i)}
-                  className="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-rose-600"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <Field label="Tax amount">
-            <input
-              type="number"
-              min={0}
-              step="0.01"
-              value={form.taxAmount}
-              onChange={(e) => setForm((f) => ({ ...f, taxAmount: Number(e.target.value) }))}
-              className="input"
-            />
-          </Field>
-          <Field label="Expected delivery">
-            <input
-              type="date"
-              value={form.expectedDeliveryDate ?? ""}
-              onChange={(e) => setForm((f) => ({ ...f, expectedDeliveryDate: e.target.value || null }))}
-              className="input"
-            />
-          </Field>
-        </div>
-
-        <Field label="Notes">
-          <textarea
-            value={form.notes ?? ""}
-            onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value || null }))}
-            className="input min-h-[70px] resize-none"
+    <DrawerShell
+      title={existing ? "Edit purchase order" : "New purchase order"}
+      onClose={onClose}
+      wide
+      footer={
+        <>
+          <SecondaryButton onClick={onClose}>Cancel</SecondaryButton>
+          <PrimaryButton onClick={handleSave} disabled={isSaving}>
+            {isSaving ? "Saving…" : existing ? "Save changes" : "Submit"}
+          </PrimaryButton>
+        </>
+      }
+    >
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 18 }}>
+        <Field label="Vendor (optional)">
+          <input
+            value={form.vendor ?? ""}
+            onChange={(e) => setForm((f) => ({ ...f, vendor: e.target.value || null }))}
+            style={inputStyle}
+            placeholder="Acme Supply Co."
           />
         </Field>
+        <Field label="Vendor contact">
+          <input
+            value={form.vendorContact ?? ""}
+            onChange={(e) => setForm((f) => ({ ...f, vendorContact: e.target.value || null }))}
+            style={inputStyle}
+            placeholder="contact@acme.com"
+          />
+        </Field>
+      </div>
 
-        <div className="flex justify-end gap-2 pt-2">
-          <button type="button" onClick={onClose} className="btn-secondary">
-            Cancel
-          </button>
-          <button type="submit" disabled={isSaving} className="btn-primary">
-            {isSaving ? "Saving…" : existing ? "Save changes" : "Submit"}
+      <div style={{ marginBottom: 18 }}>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 10 }}>
+          <span style={fieldLabelStyle}>Line items</span>
+          <button
+            type="button"
+            onClick={addItem}
+            style={{ fontSize: 12, fontWeight: 600, color: "#6366F1", background: "none", border: "none", cursor: "pointer" }}
+          >
+            + Add item
           </button>
         </div>
-      </form>
-    </Modal>
+        <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+          {form.items.map((item, i) => (
+            <div key={i} style={{ display: "grid", gridTemplateColumns: "1fr 84px 100px 28px", alignItems: "center", gap: 8 }}>
+              <input
+                value={item.partName ?? ""}
+                onChange={(e) => updateItem(i, { partName: e.target.value })}
+                placeholder="Part name (or one-off item)"
+                style={inputStyle}
+              />
+              <input
+                type="number"
+                min={1}
+                value={item.quantityOrdered}
+                onChange={(e) => updateItem(i, { quantityOrdered: Number(e.target.value) })}
+                style={inputStyle}
+                placeholder="Qty"
+              />
+              <input
+                type="number"
+                min={0}
+                step="0.01"
+                value={item.unitCost ?? 0}
+                onChange={(e) => updateItem(i, { unitCost: Number(e.target.value) })}
+                style={inputStyle}
+                placeholder="Unit cost"
+              />
+              <button
+                type="button"
+                onClick={() => removeItem(i)}
+                style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", padding: 4, borderRadius: 6 }}
+              >
+                <X size={14} />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 18 }}>
+        <Field label="Tax amount">
+          <input
+            type="number"
+            min={0}
+            step="0.01"
+            value={form.taxAmount}
+            onChange={(e) => setForm((f) => ({ ...f, taxAmount: Number(e.target.value) }))}
+            style={inputStyle}
+          />
+        </Field>
+        <Field label="Expected delivery">
+          <input
+            type="date"
+            value={form.expectedDeliveryDate ?? ""}
+            onChange={(e) => setForm((f) => ({ ...f, expectedDeliveryDate: e.target.value || null }))}
+            style={inputStyle}
+          />
+        </Field>
+      </div>
+
+      <Field label="Notes">
+        <textarea
+          value={form.notes ?? ""}
+          onChange={(e) => setForm((f) => ({ ...f, notes: e.target.value || null }))}
+          rows={4}
+          style={{ ...inputStyle, resize: "vertical" }}
+        />
+      </Field>
+    </DrawerShell>
   );
 }
 
-// ── Detail modal ──────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Detail drawer
+// ─────────────────────────────────────────────────────────────────────────────
 
-function PurchaseOrderDetailModal({
+function PurchaseOrderDrawer({
   po,
   isAdmin,
   onClose,
@@ -514,86 +943,152 @@ function PurchaseOrderDetailModal({
   onClose: () => void;
 }) {
   return (
-    <Modal title={po.poNumber} onClose={onClose} wide>
-      <div className="space-y-5">
-        <div className="flex items-center justify-between">
-          <span className={`inline-flex rounded-full border px-2.5 py-0.5 text-xs font-medium ${STATUS_STYLES[po.status]}`}>
-            {STATUS_LABELS[po.status]}
-          </span>
-          <span className="text-sm text-slate-500">Requested by {po.createdByName}</span>
+    <DrawerShell title={po.poNumber} subtitle={`Requested by ${po.createdByName}`} onClose={onClose} wide>
+      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
+        <StatusBadge status={po.status} />
+        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <Avatar name={po.createdByName} />
+          <span style={{ fontSize: 12, color: "#64748B" }}>{po.createdByName}</span>
         </div>
-
-        {po.declineReason && (
-          <p className="rounded-lg bg-rose-50 px-3 py-2 text-sm text-rose-700">
-            Declined: {po.declineReason}
-          </p>
-        )}
-
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <p className="text-slate-400">Vendor</p>
-            <p className="text-slate-800">{po.vendor ?? "—"}</p>
-          </div>
-          <div>
-            <p className="text-slate-400">Expected delivery</p>
-            <p className="text-slate-800">{po.expectedDeliveryDate ?? "—"}</p>
-          </div>
-        </div>
-
-        <table className="w-full text-left text-sm">
-          <thead className="border-b border-slate-200 text-xs uppercase text-slate-400">
-            <tr>
-              <th className="py-2 font-medium">Item</th>
-              <th className="py-2 font-medium">Ordered</th>
-              <th className="py-2 font-medium">Fulfilled</th>
-              {isAdmin && <th className="py-2 font-medium">Unit cost</th>}
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100">
-            {po.items.map((item, i) => (
-              <tr key={i}>
-                <td className="py-2">
-                  {item.partName}
-                  {item.isOneOff && <span className="ml-1.5 text-xs text-slate-400">(one-off)</span>}
-                </td>
-                <td className="py-2">{item.quantityOrdered}</td>
-                <td className="py-2">{item.quantityFulfilled}</td>
-                {isAdmin && <td className="py-2">{currency(item.unitCost)}</td>}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-
-        {isAdmin && (
-          <div className="ml-auto w-56 space-y-1 text-sm">
-            <div className="flex justify-between text-slate-500">
-              <span>Subtotal</span>
-              <span>{currency(po.subtotal)}</span>
-            </div>
-            <div className="flex justify-between text-slate-500">
-              <span>Tax</span>
-              <span>{currency(po.taxAmount)}</span>
-            </div>
-            {po.additionalCosts?.map((c, i) => (
-              <div key={i} className="flex justify-between text-slate-500">
-                <span>{c.description}</span>
-                <span>{currency(c.amount)}</span>
-              </div>
-            ))}
-            <div className="flex justify-between border-t border-slate-200 pt-1 font-medium text-slate-900">
-              <span>Total</span>
-              <span>{currency(po.totalCost)}</span>
-            </div>
-          </div>
-        )}
-
-        {po.notes && <p className="text-sm text-slate-600">{po.notes}</p>}
       </div>
-    </Modal>
+
+      {po.declineReason && (
+        <p
+          style={{
+            marginTop: 0,
+            marginBottom: 16,
+            borderRadius: 10,
+            background: "#FFF1F2",
+            border: "1px solid #FECDD3",
+            padding: "10px 12px",
+            fontSize: 13,
+            color: "#BE123C",
+            display: "flex",
+            alignItems: "flex-start",
+            gap: 8,
+          }}
+        >
+          <AlertCircle size={14} style={{ marginTop: 1, flexShrink: 0 }} />
+          Declined: {po.declineReason}
+        </p>
+      )}
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 18 }}>
+        <div>
+          <div style={fieldLabelStyle}>Vendor</div>
+          <div style={{ fontSize: 13, color: "#0F172A" }}>{po.vendor ?? "—"}</div>
+        </div>
+        <div>
+          <div style={fieldLabelStyle}>Expected delivery</div>
+          <div style={{ fontSize: 13, color: "#0F172A" }}>{po.expectedDeliveryDate ?? "—"}</div>
+        </div>
+      </div>
+
+      <div style={{ ...fieldLabelStyle, marginBottom: 10 }}>Line items</div>
+      <div style={{ borderRadius: 10, border: "1px solid #F0F4FF", overflow: "hidden", marginBottom: 18 }}>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: isAdmin ? "1fr 0.7fr 0.8fr 0.8fr" : "1fr 0.7fr 0.8fr",
+            padding: "9px 14px",
+            background: "#FAFBFF",
+            borderBottom: "1px solid #F0F4FF",
+          }}
+        >
+          {(isAdmin ? ["Item", "Ordered", "Fulfilled", "Unit cost"] : ["Item", "Ordered", "Fulfilled"]).map((h) => (
+            <span key={h} style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.06em", textTransform: "uppercase", color: "#94A3B8" }}>
+              {h}
+            </span>
+          ))}
+        </div>
+        {po.items.map((item, i) => (
+          <div
+            key={i}
+            style={{
+              display: "grid",
+              gridTemplateColumns: isAdmin ? "1fr 0.7fr 0.8fr 0.8fr" : "1fr 0.7fr 0.8fr",
+              padding: "10px 14px",
+              borderBottom: i === po.items.length - 1 ? "none" : "1px solid #F0F4FF",
+            }}
+          >
+            <span style={{ fontSize: 13, color: "#334155" }}>
+              {item.partName}
+              {item.isOneOff && <span style={{ marginLeft: 6, fontSize: 11, color: "#94A3B8" }}>(one-off)</span>}
+            </span>
+            <span style={{ fontSize: 13, color: "#334155" }}>{item.quantityOrdered}</span>
+            <span style={{ fontSize: 13, color: "#334155" }}>{item.quantityFulfilled}</span>
+            {isAdmin && <span style={{ fontSize: 13, color: "#334155" }}>{currency(item.unitCost)}</span>}
+          </div>
+        ))}
+      </div>
+
+      {isAdmin && (
+        <div style={{ marginLeft: "auto", width: 220, display: "flex", flexDirection: "column", gap: 4, fontSize: 13, marginBottom: 18 }}>
+          <div style={{ display: "flex", justifyContent: "space-between", color: "#64748B" }}>
+            <span>Subtotal</span>
+            <span>{currency(po.subtotal)}</span>
+          </div>
+          <div style={{ display: "flex", justifyContent: "space-between", color: "#64748B" }}>
+            <span>Tax</span>
+            <span>{currency(po.taxAmount)}</span>
+          </div>
+          {po.additionalCosts?.map((c, i) => (
+            <div key={i} style={{ display: "flex", justifyContent: "space-between", color: "#64748B" }}>
+              <span>{c.description}</span>
+              <span>{currency(c.amount)}</span>
+            </div>
+          ))}
+          <div style={{ display: "flex", justifyContent: "space-between", borderTop: "1px solid #E8EAFF", paddingTop: 6, fontWeight: 700, color: "#0F172A" }}>
+            <span>Total</span>
+            <span>{currency(po.totalCost)}</span>
+          </div>
+        </div>
+      )}
+
+      {po.notes && (
+        <>
+          <div style={{ ...fieldLabelStyle, marginBottom: 8 }}>Notes</div>
+          <p style={{ fontSize: 13, color: "#334155", whiteSpace: "pre-wrap", background: "#FAFBFF", border: "1px solid #F0F4FF", borderRadius: 10, padding: 12 }}>
+            {po.notes}
+          </p>
+        </>
+      )}
+    </DrawerShell>
   );
 }
 
-// ── Fulfill items modal ───────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Fulfill items — small centered modal
+// ─────────────────────────────────────────────────────────────────────────────
+
+function CenteredModal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
+  return (
+    <div style={{ position: "fixed", inset: 0, zIndex: 1000, display: "flex", alignItems: "center", justifyContent: "center", padding: 16 }}>
+      <div style={{ position: "absolute", inset: 0, background: "rgba(15,23,42,0.4)" }} onClick={onClose} />
+      <div
+        style={{
+          position: "relative",
+          width: "100%",
+          maxWidth: 440,
+          maxHeight: "90vh",
+          overflowY: "auto",
+          background: "#fff",
+          borderRadius: 16,
+          boxShadow: "0 20px 60px rgba(0,0,0,0.25)",
+          padding: 22,
+        }}
+      >
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 16 }}>
+          <h2 style={{ fontSize: 15, fontWeight: 700, color: "#0F172A", margin: 0 }}>{title}</h2>
+          <button onClick={onClose} style={{ background: "none", border: "none", cursor: "pointer", color: "#94A3B8", padding: 4 }}>
+            <X size={16} />
+          </button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
 
 function FulfillItemsModal({ po, onClose }: { po: PurchaseOrderListItem; onClose: () => void }) {
   const [fulfillItems, { isLoading }] = useFulfillPurchaseOrderItemsMutation();
@@ -603,8 +1098,7 @@ function FulfillItemsModal({ po, onClose }: { po: PurchaseOrderListItem; onClose
     Object.fromEntries(remaining.map((_, i) => [i, 0])),
   );
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  async function handleSubmit() {
     const items: FulfillItemInput[] = remaining
       .map((item, i) => ({
         partId: item.partId,
@@ -619,114 +1113,71 @@ function FulfillItemsModal({ po, onClose }: { po: PurchaseOrderListItem; onClose
   }
 
   return (
-    <Modal title={`Fulfill items — ${po.poNumber}`} onClose={onClose}>
-      <form onSubmit={handleSubmit} className="space-y-4">
+    <CenteredModal title={`Fulfill items — ${po.poNumber}`} onClose={onClose}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         {remaining.length === 0 ? (
-          <p className="text-sm text-slate-500">All items on this order have already been fulfilled.</p>
+          <p style={{ fontSize: 13, color: "#94A3B8", margin: 0 }}>All items on this order have already been fulfilled.</p>
         ) : (
           remaining.map((item, i) => {
             const stillDue = item.quantityOrdered - item.quantityFulfilled;
             return (
-              <div key={i} className="flex items-center justify-between gap-3">
+              <div key={i} style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
                 <div>
-                  <p className="text-sm font-medium text-slate-800">{item.partName}</p>
-                  <p className="text-xs text-slate-400">{stillDue} remaining of {item.quantityOrdered}</p>
+                  <p style={{ fontSize: 13, fontWeight: 600, color: "#0F172A", margin: 0 }}>{item.partName}</p>
+                  <p style={{ fontSize: 11, color: "#94A3B8", margin: "2px 0 0" }}>
+                    {stillDue} remaining of {item.quantityOrdered}
+                  </p>
                 </div>
                 <input
                   type="number"
                   min={0}
                   max={stillDue}
                   value={quantities[i] ?? 0}
-                  onChange={(e) =>
-                    setQuantities((q) => ({ ...q, [i]: Math.min(Number(e.target.value), stillDue) }))
-                  }
-                  className="input w-24"
+                  onChange={(e) => setQuantities((q) => ({ ...q, [i]: Math.min(Number(e.target.value), stillDue) }))}
+                  style={{ ...inputStyle, width: 88 }}
                 />
               </div>
             );
           })
         )}
-        <div className="flex justify-end gap-2 pt-2">
-          <button type="button" onClick={onClose} className="btn-secondary">
-            Cancel
-          </button>
-          <button type="submit" disabled={isLoading} className="btn-primary">
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8, paddingTop: 6 }}>
+          <SecondaryButton onClick={onClose}>Cancel</SecondaryButton>
+          <PrimaryButton onClick={handleSubmit} disabled={isLoading}>
+            {isLoading && <Loader size={12} className="animate-spin" />}
             {isLoading ? "Saving…" : "Confirm fulfillment"}
-          </button>
+          </PrimaryButton>
         </div>
-      </form>
-    </Modal>
+      </div>
+    </CenteredModal>
   );
 }
 
-// ── Decline modal ─────────────────────────────────────────────────────────────
+// ─────────────────────────────────────────────────────────────────────────────
+// Decline — small centered modal
+// ─────────────────────────────────────────────────────────────────────────────
 
-function DeclineModal({
-  onClose,
-  onConfirm,
-}: {
-  onClose: () => void;
-  onConfirm: (reason: string) => void;
-}) {
+function DeclineModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (reason: string) => void }) {
   const [reason, setReason] = useState("");
 
   return (
-    <Modal title="Decline request" onClose={onClose}>
-      <div className="space-y-4">
+    <CenteredModal title="Decline request" onClose={onClose}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <Field label="Reason (optional)">
           <textarea
             value={reason}
             onChange={(e) => setReason(e.target.value)}
-            className="input min-h-[80px] resize-none"
+            rows={4}
+            style={{ ...inputStyle, resize: "vertical" }}
             placeholder="Let the requester know why…"
           />
         </Field>
-        <div className="flex justify-end gap-2">
-          <button onClick={onClose} className="btn-secondary">
-            Cancel
-          </button>
-          <button onClick={() => onConfirm(reason)} className="btn-primary bg-rose-600 hover:bg-rose-700">
+        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+          <SecondaryButton onClick={onClose}>Cancel</SecondaryButton>
+          <PrimaryButton danger onClick={() => onConfirm(reason)}>
             Decline
-          </button>
+          </PrimaryButton>
         </div>
       </div>
-    </Modal>
-  );
-}
-
-// ── Shared bits ────────────────────────────────────────────────────────────────
-
-function Modal({
-  title,
-  onClose,
-  children,
-  wide,
-}: {
-  title: string;
-  onClose: () => void;
-  children: React.ReactNode;
-  wide?: boolean;
-}) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 p-4">
-      <div className={`max-h-[90vh] w-full overflow-y-auto rounded-xl bg-white p-6 shadow-xl ${wide ? "max-w-2xl" : "max-w-md"}`}>
-        <div className="mb-5 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-900">{title}</h2>
-          <button onClick={onClose} className="rounded-md p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-600">
-            <X className="h-4 w-4" />
-          </button>
-        </div>
-        {children}
-      </div>
-    </div>
-  );
-}
-
-function Field({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <label className="block">
-      <span className="mb-1 block text-sm font-medium text-slate-700">{label}</span>
-      {children}
-    </label>
+    </CenteredModal>
   );
 }
