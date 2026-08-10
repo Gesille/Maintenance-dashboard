@@ -563,6 +563,8 @@ export default function PurchaseOrdersPage() {
 
 import { useRef } from "react";
 import { createPortal } from "react-dom";
+import { useGetAllVendorsQuery } from "@/redux/Vendor/Vendorapi";
+import { option } from "framer-motion/client";
 
 function Toast({ message, type, onDismiss }: { message: string; type: "error" | "success"; onDismiss: () => void }) {
   return (
@@ -1096,7 +1098,8 @@ function PurchaseOrderFormDrawer({
 }) {
   const [createPurchaseOrder, { isLoading: isCreating }] = useCreatePurchaseOrderMutation();
   const [updatePurchaseOrder, { isLoading: isUpdating }] = useUpdatePurchaseOrderMutation();
-
+const { data: vendorsData } = useGetAllVendorsQuery();
+const vendors = vendorsData?.data ?? [];
   const [form, setForm] = useState<PurchaseOrderFormInput>(() =>
     existing
       ? {
@@ -1154,14 +1157,40 @@ function PurchaseOrderFormDrawer({
       }
     >
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 18 }}>
-        <Field label="Vendor (optional)">
-          <input
-            value={form.vendor ?? ""}
-            onChange={(e) => setForm((f) => ({ ...f, vendor: e.target.value || null }))}
-            style={inputStyle}
-            placeholder="Acme Supply Co."
-          />
-        </Field>
+      <Field label="Vendor">
+  <select
+    value={form.vendor ?? ""}
+    onChange={(e) => {
+      const name = e.target.value;
+      const matched = vendors.find((v) => v.name === name);
+      setForm((f) => ({
+        ...f,
+        vendor: name || null,
+        // Auto-fill with the vendor's phone number — still editable below.
+        vendorContact: matched?.phone ?? matched?.email ?? f.vendorContact,
+      }));
+    }}
+    style={{ ...inputStyle, cursor: "pointer" }}
+  >
+    <option value="">Select vendor…</option>
+    {vendors.map((v) => (
+      <option key={v.id} value={v.name}>
+        {v.name}
+      </option>
+    ))}
+    {form.vendor && !vendors.some((v) => v.name === form.vendor) && (
+      <option value={form.vendor}>{form.vendor} (not in list)</option>
+    )}
+  </select>
+  <a
+    href="/dashboard/vendors"
+    target="_blank"
+    rel="noopener noreferrer"
+    style={{ fontSize: 11, color: "#6366F1", fontWeight: 600, textDecoration: "none", marginTop: 5, display: "inline-block" }}
+  >
+    Don&apos;t see it? Add a new vendor →
+  </a>
+</Field>
         <Field label="Vendor contact">
           <input
             value={form.vendorContact ?? ""}
