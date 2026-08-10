@@ -8,6 +8,7 @@ import { CATEGORY_COLORS } from "@/types/tokens";
 import { useGetAllCategoriesQuery } from "@/redux/Category/Categoryapi";
 import { useGetAllLocationsQuery } from "@/redux/Location/Locationapi";
 import { useGetAllRestaurantsQuery } from "@/redux/Restaurant/Restaurantapi";
+import { useGetAllVendorsQuery } from "@/redux/Vendor/Vendorapi";
 
 type Mode = "view" | "edit" | "create";
 
@@ -96,7 +97,8 @@ export function EquipmentDetailPanel({
   const categories = categoriesData?.data ?? [];
   const { data: locationsData } = useGetAllLocationsQuery();
   const locations = locationsData?.data ?? [];
-
+const { data: vendorsData } = useGetAllVendorsQuery();
+const vendors = vendorsData?.data ?? [];
   const { data: restaurantsData } = useGetAllRestaurantsQuery();
   const restaurants = restaurantsData?.data ?? [];
   useEffect(() => {
@@ -375,6 +377,28 @@ export function EquipmentDetailPanel({
       Don&apos;t see it? Add a new restaurant →
     </a>
   </>
+  ) : f.key === "vendor" ? (
+  <>
+    <select
+      value={(form.vendor as string) ?? ""}
+      onChange={(e) => handleField("vendor", e.target.value)}
+      style={{ ...inputStyle(), cursor: "pointer" }}
+    >
+      <option value="">Select vendor…</option>
+      {vendors.map((v) => (
+        <option key={v.id} value={v.name}>
+          {v.name}
+        </option>
+      ))}
+      {form.vendor && !vendors.some((v) => v.name === form.vendor) && (
+        <option value={form.vendor as string}>{form.vendor} (not in list)</option>
+      )}
+    </select>
+    <a href="/dashboard/vendors" target="_blank" rel="noopener noreferrer" style={createLinkStyle()}>
+      Don&apos;t see it? Add a new vendor →
+    </a>
+  </>
+
 ) : (
   <input
     type={f.type ?? "text"}
