@@ -451,24 +451,25 @@ export function WODetailPanel({
     accent={accentColor}
   />
   <KpiCard
-    icon={
-      <span
-        style={{
-          fontSize: 12,
-          fontWeight: 700,
-          background: priority.bg,
-          color: priority.text,
-          padding: "1px 8px",
-          borderRadius: 99,
-        }}
-      >
-        {priority.label}
-      </span>
-    }
-    label="Priority"
-    value={null}
-    accent={accentColor}
-  />
+  icon={null}
+  label="Priority"
+  value={
+    <span
+      style={{
+        display: "inline-block",
+        fontSize: 12,
+        fontWeight: 700,
+        background: priority.bg,
+        color: priority.text,
+        padding: "3px 10px",
+        borderRadius: 99,
+      }}
+    >
+      {priority.label}
+    </span>
+  }
+  accent={accentColor}
+/>
   <KpiCard
     icon={<Clock size={15} color={accentColor} />}
     label="Duration"
