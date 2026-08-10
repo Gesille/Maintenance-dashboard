@@ -75,8 +75,9 @@ export function StatusCard({
                 cx="50%"
                 cy="50%"
                 innerRadius={42}
-                outerRadius={62}
+                outerRadius={58}
                 paddingAngle={2}
+                stroke="none"
               >
                 {donutData.map((entry, index) => (
                   <Cell
