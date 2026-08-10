@@ -4,11 +4,10 @@ import { CardShell } from "../shared/CardShell";
 import { Stat } from "../shared/Stat";
 
 import type { StatusBreakdownReport } from "@/redux/Reporting/Reportingapi";
-import { STATUS_ORDER } from "../Reporting/reporting.tokens";
+import {  STATUS_ORDER } from "../Reporting/reporting.tokens";
 import { MAINTENANCE_STATUS_CONFIG } from "@/types/tokens";
 
-// backend returns { new, underRepair, pendingReview, done, cancel, total }
-// this maps each token key -> the matching field on that object
+// backend StatusBreakdownReport fields: new, underRepair, pendingReview, done, cancel, total
 const STATUS_VALUE_KEY = {
   new: "new",
   under_repair: "underRepair",
@@ -18,11 +17,14 @@ const STATUS_VALUE_KEY = {
 } as const;
 
 export function StatusCard({ data }: { data: StatusBreakdownReport }) {
-  const donutData = STATUS_ORDER.map(({ key }) => ({
-    name: MAINTENANCE_STATUS_CONFIG[key].label,
-    value: data[STATUS_VALUE_KEY[key]],
-    color: MAINTENANCE_STATUS_CONFIG[key].dot,
-  })).filter((d) => d.value > 0);
+  const donutData = STATUS_ORDER.map(({ key }) => {
+    const config = MAINTENANCE_STATUS_CONFIG[key];
+    return {
+      name: config.label,
+      value: data[STATUS_VALUE_KEY[key]],
+      color: config.dot,
+    };
+  }).filter((d) => d.value > 0);
 
   return (
     <CardShell title="Status" onAdd>
@@ -40,14 +42,17 @@ export function StatusCard({ data }: { data: StatusBreakdownReport }) {
           </ResponsiveContainer>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 20px", flex: 1 }}>
-          {STATUS_ORDER.map(({ key }) => (
-            <Stat
-              key={key}
-              value={data[STATUS_VALUE_KEY[key]]}
-              label={MAINTENANCE_STATUS_CONFIG[key].label}
-              swatch={MAINTENANCE_STATUS_CONFIG[key].dot}
-            />
-          ))}
+          {STATUS_ORDER.map(({ key }) => {
+            const config = MAINTENANCE_STATUS_CONFIG[key];
+            return (
+              <Stat
+                key={key}
+                value={data[STATUS_VALUE_KEY[key]]}
+                label={config.label}
+                swatch={config.dot}
+              />
+            );
+          })}
         </div>
       </div>
     </CardShell>
