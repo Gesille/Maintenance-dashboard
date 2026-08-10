@@ -6,6 +6,8 @@ import { Edit3, Trash2, X, Save, Loader, MapPin, Tag, Wrench } from "lucide-reac
 import { Equipment, EquipmentFormInput, EMPTY_EQUIPMENT_FORM } from "@/types/equipment";
 import { CATEGORY_COLORS } from "@/types/tokens";
 import { useGetAllCategoriesQuery } from "@/redux/Category/Categoryapi";
+import { useGetAllLocationsQuery } from "@/redux/Location/Locationapi";
+import { useGetAllRestaurantsQuery } from "@/redux/Restaurant/Restaurantapi";
 
 type Mode = "view" | "edit" | "create";
 
@@ -71,7 +73,7 @@ const FIELD_GROUPS: { title: string; fields: { key: keyof EquipmentFormInput; la
 
 function toFormInput(eq: Equipment | null): EquipmentFormInput {
   if (!eq) return EMPTY_EQUIPMENT_FORM;
-  const { id, active, createdAt, updatedAt, ...rest } = eq;
+  const {  ...rest } = eq;
   return rest;
 }
 
@@ -92,7 +94,11 @@ export function EquipmentDetailPanel({
   // whatever exists — including anything just created on the Categories page.
   const { data: categoriesData } = useGetAllCategoriesQuery();
   const categories = categoriesData?.data ?? [];
+  const { data: locationsData } = useGetAllLocationsQuery();
+  const locations = locationsData?.data ?? [];
 
+  const { data: restaurantsData } = useGetAllRestaurantsQuery();
+  const restaurants = restaurantsData?.data ?? [];
   useEffect(() => {
     setForm(toFormInput(equipment));
     setConfirmingDelete(false);
@@ -306,51 +312,77 @@ export function EquipmentDetailPanel({
                         rows={3}
                         style={inputStyle()}
                       />
-                    ) : f.key === "category" ? (
-                      <>
-                        <select
-                          value={(form.category as string) ?? ""}
-                          onChange={(e) => handleField("category", e.target.value)}
-                          style={{ ...inputStyle(), cursor: "pointer" }}
-                        >
-                          <option value="">Select category…</option>
-                          {categories.map((c) => (
-                            <option key={c.id} value={c.name}>
-                              {c.name}
-                            </option>
-                          ))}
-                          {/* Keeps whatever was already saved selectable even if it
-                              doesn't match a current active category name. */}
-                          {form.category && !categories.some((c) => c.name === form.category) && (
-                            <option value={form.category as string}>
-                              {form.category} (not in list)
-                            </option>
-                          )}
-                        </select>
-                        <a
-                          href="/dashboard/categories"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{
-                            fontSize: 11,
-                            color: accentColor,
-                            fontWeight: 600,
-                            textDecoration: "none",
-                            marginTop: 5,
-                            display: "inline-block",
-                          }}
-                        >
-                          Don&apos;t see it? Create a new category →
-                        </a>
-                      </>
-                    ) : (
-                      <input
-                        type={f.type ?? "text"}
-                        value={(form[f.key] as string | number) ?? ""}
-                        onChange={(e) => handleField(f.key, e.target.value)}
-                        style={inputStyle()}
-                      />
-                    )}
+                   ) : f.key === "category" ? (
+  <>
+    <select
+      value={(form.category as string) ?? ""}
+      onChange={(e) => handleField("category", e.target.value)}
+      style={{ ...inputStyle(), cursor: "pointer" }}
+    >
+      <option value="">Select category…</option>
+      {categories.map((c) => (
+        <option key={c.id} value={c.name}>
+          {c.name}
+        </option>
+      ))}
+      {form.category && !categories.some((c) => c.name === form.category) && (
+        <option value={form.category as string}>{form.category} (not in list)</option>
+      )}
+    </select>
+    <a href="/dashboard/categories" target="_blank" rel="noopener noreferrer" style={createLinkStyle()}>
+      Don&apos;t see it? Create a new category →
+    </a>
+  </>
+) : f.key === "usedInLocation" ? (
+  <>
+    <select
+      value={(form.usedInLocation as string) ?? ""}
+      onChange={(e) => handleField("usedInLocation", e.target.value)}
+      style={{ ...inputStyle(), cursor: "pointer" }}
+    >
+      <option value="">Select location…</option>
+      {locations.map((l) => (
+        <option key={l.id} value={l.name}>
+          {l.name}
+        </option>
+      ))}
+      {form.usedInLocation && !locations.some((l) => l.name === form.usedInLocation) && (
+        <option value={form.usedInLocation as string}>{form.usedInLocation} (not in list)</option>
+      )}
+    </select>
+    <a href="/dashboard/locations" target="_blank" rel="noopener noreferrer" style={createLinkStyle()}>
+      Don&apos;t see it? Add a new location →
+    </a>
+  </>
+) : f.key === "restaurant" ? (
+  <>
+    <select
+      value={(form.restaurant as string) ?? ""}
+      onChange={(e) => handleField("restaurant", e.target.value)}
+      style={{ ...inputStyle(), cursor: "pointer" }}
+    >
+      <option value="">Select restaurant…</option>
+      {restaurants.map((r) => (
+        <option key={r.id} value={r.name}>
+          {r.name}
+        </option>
+      ))}
+      {form.restaurant && !restaurants.some((r) => r.name === form.restaurant) && (
+        <option value={form.restaurant as string}>{form.restaurant} (not in list)</option>
+      )}
+    </select>
+    <a href="/dashboard/locations" target="_blank" rel="noopener noreferrer" style={createLinkStyle()}>
+      Don&apos;t see it? Add a new restaurant →
+    </a>
+  </>
+) : (
+  <input
+    type={f.type ?? "text"}
+    value={(form[f.key] as string | number) ?? ""}
+    onChange={(e) => handleField(f.key, e.target.value)}
+    style={inputStyle()}
+  />
+)}
                   </div>
                 ))}
               </div>
@@ -489,7 +521,16 @@ function inputStyle(): React.CSSProperties {
     fontFamily: "inherit",
   };
 }
-
+function createLinkStyle(): React.CSSProperties {
+  return {
+    fontSize: 11,
+    color: accentColor,
+    fontWeight: 600,
+    textDecoration: "none",
+    marginTop: 5,
+    display: "inline-block",
+  };
+}
 function SectionLabel({ label }: { label: string }) {
   return (
     <p
