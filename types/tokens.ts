@@ -168,7 +168,7 @@ export const NAV_ITEMS = [
   { label: "Work order & Requests", icon: "{label-clipboard-list", href: "/dashboard/work-orders" },
   { label: "Purchase Orders", icon: "ti-shopping-cart", href: "/dashboard/purchase-orders" },
   { label: "Support Tickets", icon: "ti-ticket", href: "/dashboard/support-tickets" },
-  { label: "Reporting", icon: "ti-bar-chart", href: "/dashboard/report" },
+  { label: "Reporting", icon: "ti-pie-chart", href: "/dashboard/report" },
   { label: "Parts Inventory", icon: "ti-package", href: "/dashboard/part-inventory" },
 ];
 
