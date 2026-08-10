@@ -181,7 +181,7 @@ export const NAV_ASSET_ITEMS = [
 export const NAV_CONFIG_ITEMS = [
   { label: "Teams / Users", icon: "ti-users", href: "/dashboard/users" },
   { label: "Categories", icon: "ti-bolt", href: "/dashboard/category" },
-  { label: "Settings", icon: "ti-settings", href: "/dashboard/settings" },
+  { label: "Locations", icon: "ti-settings", href: "/dashboard/locations" },
 ];
 
 
