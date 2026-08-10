@@ -50,7 +50,7 @@ export function StatusCard({
   return (
     <CardShell
       title="Status"
-     
+      subtitle={`${data.total} total requests`}
     >
       <div
         style={{

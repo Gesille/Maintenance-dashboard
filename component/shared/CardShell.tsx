@@ -1,12 +1,16 @@
+
 "use client";
-import { ChevronDown, Plus } from "lucide-react";
+
+import { Plus } from "lucide-react";
 
 export function CardShell({
   title,
+  subtitle,
   children,
   onAdd,
 }: {
   title: string;
+  subtitle?: string;
   children: React.ReactNode;
   onAdd?: boolean;
 }) {
@@ -23,19 +27,55 @@ export function CardShell({
         minWidth: 0,
       }}
     >
-      <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 14 }}>
-        <div style={{ display: "flex", alignItems: "center", gap: 5, cursor: "pointer" }}>
-          <span style={{ fontSize: 13.5, fontWeight: 700, color: "#0F172A", letterSpacing: "-0.01em" }}>
+      <div
+        style={{
+          display: "flex",
+          alignItems: "flex-start",
+          justifyContent: "space-between",
+          marginBottom: 14,
+        }}
+      >
+        <div>
+          <div
+            style={{
+              fontSize: 13.5,
+              fontWeight: 700,
+              color: "#0F172A",
+              letterSpacing: "-0.01em",
+            }}
+          >
             {title}
-          </span>
-          <ChevronDown size={14} color="#94A3B8" />
+          </div>
+
+          {subtitle && (
+            <div
+              style={{
+                marginTop: 3,
+                fontSize: 11.5,
+                fontWeight: 500,
+                color: "#94A3B8",
+              }}
+            >
+              {subtitle}
+            </div>
+          )}
         </div>
+
         {onAdd && (
           <button
+            type="button"
             style={{
-              width: 26, height: 26, borderRadius: 8, border: "1px solid #E8EAFF",
-              background: "#FAFBFF", display: "flex", alignItems: "center",
-              justifyContent: "center", cursor: "pointer", color: "#6366F1",
+              width: 26,
+              height: 26,
+              borderRadius: 8,
+              border: "1px solid #E8EAFF",
+              background: "#FAFBFF",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+              color: "#6366F1",
+              flexShrink: 0,
             }}
             aria-label={`Add to ${title}`}
           >
@@ -43,7 +83,9 @@ export function CardShell({
           </button>
         )}
       </div>
+
       {children}
     </div>
   );
 }
+
