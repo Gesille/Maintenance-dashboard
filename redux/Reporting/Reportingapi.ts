@@ -35,11 +35,8 @@ export interface StatusBreakdownReport {
   new: number;
   underRepair: number;
   pendingReview: number;
-  cancel: number;
-  open: number;
-  inProgress: number;
-  onHold: number;
   done: number;
+  cancel: number;
   total: number;
 }
 
@@ -276,14 +273,29 @@ export const reportingApi = apiSlice.injectEndpoints({
       }),
       transformResponse: (res: ApiEnvelope<CategoryBreakdownRow[]>) => res.data,
     }),
-getReportingDetails: builder.query<RequestDetailRow[], { startDate?: string; endDate?: string }>({
-  query: (filters) => ({ url: "/reporting/details", params: filters }),
-  transformResponse: (res: { data: RequestDetailRow[] }) => res.data,
+getReportingDetails: builder.query<
+  RequestDetailRow[],
+  ReportingFilters | void
+>({
+  query: (filters) => ({
+    url: `reporting/details${buildQuery(filters ?? {})}`,
+    method: "GET",
+    credentials: "include" as const,
+  }),
+  transformResponse: (
+    res: ApiEnvelope<RequestDetailRow[]>
+  ) => res.data,
 }),
 
 getRecentActivity: builder.query<ActivityRow[], void>({
-  query: () => "/reporting/activity",
-  transformResponse: (res: { data: ActivityRow[] }) => res.data,
+  query: () => ({
+    url: "reporting/activity",
+    method: "GET",
+    credentials: "include" as const,
+  }),
+  transformResponse: (
+    res: ApiEnvelope<ActivityRow[]>
+  ) => res.data,
 }),
     // ─── Cost rollup ───────────────────────────────────────────────────────────
     // Not date-filtered on the backend — reflects current asset state.

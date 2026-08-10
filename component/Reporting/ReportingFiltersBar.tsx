@@ -7,10 +7,25 @@ export function ReportingFiltersBar() {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
       <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-        <FilterChip icon={<UserPlus size={13.5} />} label="Assigned to" />
-        <FilterChip icon={<CalendarDays size={13.5} />} label="Due Date" />
-        <FilterChip icon={<MapPin size={13.5} />} label="Location" />
-        <FilterChip icon={<Flag size={13.5} />} label="Priority" />
+        <FilterChip
+  icon={<UserPlus size={14} />}
+  label="Assigned to"
+/>
+
+<FilterChip
+  icon={<CalendarDays size={14} />}
+  label="Due Date"
+/>
+
+<FilterChip
+  icon={<MapPin size={14} />}
+  label="Location"
+/>
+
+<FilterChip
+  icon={<Flag size={14} />}
+  label="Priority"
+/>
         <button
           style={{
             display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, fontWeight: 600,
