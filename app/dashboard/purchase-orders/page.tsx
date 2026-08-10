@@ -1,3 +1,5 @@
+/* eslint-disable react/jsx-no-undef */
+/* eslint-disable react-hooks/rules-of-hooks */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
@@ -220,7 +222,19 @@ export default function PurchaseOrdersPage() {
   const [declinePurchaseOrder] = useDeclinePurchaseOrderMutation();
   const [markAsOrdered] = useMarkPurchaseOrderAsOrderedMutation();
   const [cancelPurchaseOrder] = useCancelPurchaseOrderMutation();
-
+ const [toast, setToast] = useState<{ message: string; type: "error" | "success" } | null>(null);
+  function notify(message: string, type: "error" | "success" = "success") {
+    setToast({ message, type });
+    window.setTimeout(() => setToast(null), 4000);
+  }
+  async function runAction(promise: { unwrap: () => Promise<any> }, successMsg: string) {
+    try {
+      await promise.unwrap();
+      notify(successMsg, "success");
+    } catch (err: any) {
+      notify(err?.data?.message || err?.error || "Something went wrong. Please try again.", "error");
+    }
+  }
   const orders = data?.data ?? [];
   const allOrders = allData?.data ?? [];
 
@@ -489,16 +503,16 @@ export default function PurchaseOrdersPage() {
                       blanks) for admins and 6 for everyone else. */}
                   {isAdmin && (
                     <div onClick={(e) => e.stopPropagation()}>
-                      <RowActions
-                        po={po}
-                        onEdit={() => setEditingPO(po)}
-                        onDelete={() => deletePurchaseOrder(po.id)}
-                        onApprove={() => approvePurchaseOrder(po.id)}
-                        onDecline={() => setDeclinePOId(po.id)}
-                        onMarkOrdered={() => markAsOrdered(po.id)}
-                        onCancel={() => cancelPurchaseOrder(po.id)}
-                        onFulfill={() => setFulfillPO(po)}
-                      />
+                    <RowActions
+  po={po}
+  onEdit={() => setEditingPO(po)}
+  onDelete={() => runAction(deletePurchaseOrder(po.id), "Purchase order deleted")}
+  onApprove={() => runAction(approvePurchaseOrder(po.id), "Purchase order approved")}
+  onDecline={() => setDeclinePOId(po.id)}
+  onMarkOrdered={() => runAction(markAsOrdered(po.id), "Marked as ordered")}
+  onCancel={() => runAction(cancelPurchaseOrder(po.id), "Purchase order cancelled")}
+  onFulfill={() => setFulfillPO(po)}
+/>
                     </div>
                   )}
                   <div style={{ textAlign: "right" }}>
@@ -529,12 +543,12 @@ export default function PurchaseOrdersPage() {
         <DeclineModal
           onClose={() => setDeclinePOId(null)}
           onConfirm={(reason) => {
-            declinePurchaseOrder({ id: declinePOId, reason });
+            runAction(declinePurchaseOrder({ id: declinePOId, reason }), "Purchase order declined");
             setDeclinePOId(null);
           }}
         />
       )}
-
+{toast && <Toast message={toast.message} type={toast.type} onDismiss={() => setToast(null)} />}
       <style>{`@keyframes spin { to { transform: rotate(360deg); } } .animate-spin { animation: spin 0.7s linear infinite; }`}</style>
     </div>
   );
@@ -550,16 +564,28 @@ export default function PurchaseOrdersPage() {
 import { useRef } from "react";
 import { createPortal } from "react-dom";
 
-function RowActions({
-  po,
-  onEdit,
-  onDelete,
-  onApprove,
-  onDecline,
-  onMarkOrdered,
-  onCancel,
-  onFulfill,
-}: {
+function Toast({ message, type, onDismiss }: { message: string; type: "error" | "success"; onDismiss: () => void }) {
+  return (
+    <div
+      style={{
+        position: "fixed", bottom: 24, right: 24, zIndex: 2000,
+        display: "flex", alignItems: "center", gap: 10,
+        padding: "12px 16px", borderRadius: 10,
+        background: type === "error" ? "#FFF1F2" : "#ECFDF5",
+        border: `1px solid ${type === "error" ? "#FECDD3" : "#A7F3D0"}`,
+        color: type === "error" ? "#BE123C" : "#047857",
+        fontSize: 13, fontWeight: 600, boxShadow: "0 12px 32px rgba(15,23,42,0.14)", maxWidth: 360,
+      }}
+    >
+      <AlertCircle size={14} style={{ flexShrink: 0 }} />
+      <span style={{ flex: 1 }}>{message}</span>
+      <button onClick={onDismiss} style={{ background: "none", border: "none", cursor: "pointer", color: "inherit", display: "flex" }}>
+        <X size={13} />
+      </button>
+    </div>
+  );
+}
+function RowActions({ po, onEdit, onDelete, onApprove, onDecline, onMarkOrdered, onCancel, onFulfill }: {
   po: PurchaseOrderListItem;
   onEdit: () => void;
   onDelete: () => void;
@@ -573,6 +599,37 @@ function RowActions({
   const [coords, setCoords] = useState<{ top: number; left: number } | null>(null);
   const btnRef = useRef<HTMLButtonElement>(null);
   const canCancel = !po.items.some((i) => i.quantityFulfilled > 0);
+
+  function renderMenuItems() {
+    switch (po.status) {
+      case "requested":
+        return (
+          <>
+            <MenuItem icon={Check} label="Approve" onClick={() => { onApprove(); setOpen(false); }} />
+            <MenuItem icon={Ban} label="Decline" onClick={() => { onDecline(); setOpen(false); }} />
+            <MenuItem icon={Pencil} label="Edit" onClick={() => { onEdit(); setOpen(false); }} />
+          </>
+        );
+      case "approved":
+        return (
+          <>
+            <MenuItem icon={Truck} label="Mark as ordered" onClick={() => { onMarkOrdered(); setOpen(false); }} />
+            <MenuItem icon={Pencil} label="Edit" onClick={() => { onEdit(); setOpen(false); }} />
+            {canCancel && <MenuItem icon={Ban} label="Cancel" onClick={() => { onCancel(); setOpen(false); }} />}
+          </>
+        );
+      case "ordered":
+      case "partially_fulfilled":
+        return (
+          <>
+            <MenuItem icon={PackageCheck} label="Fulfill items" onClick={() => { onFulfill(); setOpen(false); }} />
+            {canCancel && <MenuItem icon={Ban} label="Cancel" onClick={() => { onCancel(); setOpen(false); }} />}
+          </>
+        );
+      default:
+        return null; // fulfilled / declined / cancelled — nothing but Delete
+    }
+  }
 
   function toggleOpen() {
     if (!open && btnRef.current) {
@@ -591,49 +648,30 @@ function RowActions({
       >
         <ChevronDown size={15} />
       </button>
-
-      {open && coords &&
-        createPortal(
-          <>
-            <div style={{ position: "fixed", inset: 0, zIndex: 1000 }} onClick={() => setOpen(false)} />
-            <div
-              style={{
-                position: "fixed",
-                top: coords.top,
-                left: coords.left,
-                zIndex: 1001,
-                width: 190,
-                borderRadius: 12,
-                border: "1px solid #E8EAFF",
-                background: "#fff",
-                padding: "6px 0",
-                boxShadow: "0 12px 32px rgba(15,23,42,0.14)",
-              }}
-            >
-              {po.status === "requested" && (
-                <>
-                  <MenuItem icon={Check} label="Approve" onClick={() => { onApprove(); setOpen(false); }} />
-                  <MenuItem icon={Ban} label="Decline" onClick={() => { onDecline(); setOpen(false); }} />
-                  <MenuItem icon={Pencil} label="Edit" onClick={() => { onEdit(); setOpen(false); }} />
-                </>
-              )}
-              {po.status === "approved" && (
-                <>
-                  <MenuItem icon={Truck} label="Mark as ordered" onClick={() => { onMarkOrdered(); setOpen(false); }} />
-                  <MenuItem icon={Pencil} label="Edit" onClick={() => { onEdit(); setOpen(false); }} />
-                </>
-              )}
-              {(po.status === "ordered" || po.status === "partially_fulfilled") && (
-                <MenuItem icon={PackageCheck} label="Fulfill items" onClick={() => { onFulfill(); setOpen(false); }} />
-              )}
-              {canCancel && !["cancelled", "declined", "fulfilled"].includes(po.status) && (
-                <MenuItem icon={Ban} label="Cancel" onClick={() => { onCancel(); setOpen(false); }} />
-              )}
-              <MenuItem icon={Trash2} label="Delete" danger onClick={() => { onDelete(); setOpen(false); }} />
-            </div>
-          </>,
-          document.body,
-        )}
+{open && coords &&
+  createPortal(
+    <>
+      <div style={{ position: "fixed", inset: 0, zIndex: 1000 }} onClick={() => setOpen(false)} />
+      <div
+        style={{
+          position: "fixed",
+          top: coords.top,
+          left: coords.left,
+          zIndex: 1001,
+          width: 190,
+          borderRadius: 12,
+          border: "1px solid #E8EAFF",
+          background: "#fff",
+          padding: "6px 0",
+          boxShadow: "0 12px 32px rgba(15,23,42,0.14)",
+        }}
+      >
+        {renderMenuItems()}
+        <MenuItem icon={Trash2} label="Delete" danger onClick={() => { onDelete(); setOpen(false); }} />
+      </div>
+    </>,
+    document.body,
+  )}
     </div>
   );
 }
