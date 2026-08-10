@@ -1,40 +1,113 @@
+
 "use client";
+
 import { INDIGO } from "../Reporting/reporting.tokens";
 import { CardShell } from "../shared/CardShell";
 import { EmptyState } from "../shared/EmptyState";
 
 import type { TechnicianWorkloadRow } from "@/redux/Reporting/Reportingapi";
 
-export function TechnicianWorkloadCard({ data }: { data: TechnicianWorkloadRow[] }) {
-  const maxTotal = Math.max(1, ...data.map((r) => r.total));
+export function TechnicianWorkloadCard({
+  data,
+}: {
+  data: TechnicianWorkloadRow[];
+}) {
+  const maxTotal = Math.max(
+    1,
+    ...data.map((row) => row.total),
+  );
 
   return (
-    <CardShell title="Technician Workload" onAdd>
+    <CardShell
+      title="Technician Workload"
+      subtitle={`${data.length} technicians`}
+    >
       {data.length === 0 ? (
-        <EmptyState label="No technician assignments in range" />
+        <EmptyState label="No technician data" />
       ) : (
-        <div style={{ display: "flex", flexDirection: "column", gap: 12 }}>
-          {data.map((row) => (
-            <div key={row.technicianId} style={{ display: "flex", alignItems: "center", gap: 10 }}>
-              <span
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: 12,
+          }}
+        >
+          {data.map((row) => {
+            const completedWidth =
+              (row.completed / maxTotal) * 100;
+
+            const openWidth =
+              (row.open / maxTotal) * 100;
+
+            return (
+              <div
+                key={row.technicianId}
                 style={{
-                  fontSize: 12, fontWeight: 600, color: "#334155", width: 100, flexShrink: 0,
-                  overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
                 }}
               >
-                {row.technicianName}
-              </span>
-              <div style={{ flex: 1, display: "flex", height: 8, borderRadius: 99, background: "#F1F5F9", overflow: "hidden" }}>
-                <div style={{ width: `${(row.completed / maxTotal) * 100}%`, background: "#22C55E" }} />
-                <div style={{ width: `${(row.open / maxTotal) * 100}%`, background: INDIGO }} />
+                <span
+                  style={{
+                    fontSize: 12,
+                    fontWeight: 600,
+                    color: "#334155",
+                    width: 100,
+                    flexShrink: 0,
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "nowrap",
+                  }}
+                  title={row.technicianName}
+                >
+                  {row.technicianName}
+                </span>
+
+                <div
+                  style={{
+                    flex: 1,
+                    display: "flex",
+                    height: 8,
+                    borderRadius: 99,
+                    background: "#F1F5F9",
+                    overflow: "hidden",
+                  }}
+                >
+                  <div
+                    style={{
+                      width: `${completedWidth}%`,
+                      background: "#22C55E",
+                      transition: "width 0.3s ease",
+                    }}
+                  />
+
+                  <div
+                    style={{
+                      width: `${openWidth}%`,
+                      background: INDIGO,
+                      transition: "width 0.3s ease",
+                    }}
+                  />
+                </div>
+
+                <span
+                  style={{
+                    fontSize: 11.5,
+                    color: "#94A3B8",
+                    width: 70,
+                    textAlign: "right",
+                    flexShrink: 0,
+                  }}
+                >
+                  {row.completed}/{row.total} done
+                </span>
               </div>
-              <span style={{ fontSize: 11.5, color: "#94A3B8", width: 70, textAlign: "right", flexShrink: 0 }}>
-                {row.completed}/{row.total} done
-              </span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </CardShell>
   );
 }
+
