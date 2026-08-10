@@ -1,28 +1,26 @@
 "use client";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { WorkOrderSidebar } from "@/component/Sidebar";
-import { useGetReportingSummaryQuery } from "@/redux/Reporting/Reportingapi";
-import { RANGE_OPTIONS, TABS } from "./reporting.tokens";
+
+
 import { ReportingHeader } from "./ReportingHeader";
 import { ReportingTabs } from "./ReportingTabs";
 import { ReportingFiltersBar } from "./ReportingFiltersBar";
-import { CategoryBreakdownCard } from "../cards/CategoryBreakdownCard";
-import { CostRollupCard } from "../cards/CostRollupCard";
-import { CreatedVsCompletedCard } from "../cards/CreatedVsCompletedCard";
-import { EquipmentReliabilityCard } from "../cards/EquipmentReliabilityCard";
-import { LocationBreakdownCard } from "../cards/LocationBreakdownCard";
-import { OverdueRequestsCard } from "../cards/OverdueRequestsCard";
-import { PriorityCard } from "../cards/PriorityCard";
-import { ReactiveVsRepeatableCard } from "../cards/ReactiveVsRepeatableCard";
-import { ResolutionTimeCard } from "../cards/ResolutionTimeCard";
-import { StatusCard } from "../cards/StatusCard";
-import { TechnicianWorkloadCard } from "../cards/TechnicianWorkloadCard";
+import { renderCard, FULL_WIDTH_CARDS } from "../cards/CardRenderer";
+import { ReportingDetailsTable } from "../cards/ReportingDetailsTable";
+import { RecentActivityCard } from "../cards/RecentActivityCard";
+import { CustomDashboardsPanel } from "../cards/CustomDashboardsPanel";
+import { ExportDataPanel } from "../cards/ExportDataPanel";
 import { ChartLoading } from "../shared/ChartLoading";
-
+import { RANGE_OPTIONS, TABS } from "./reporting.tokens";
+import { useGetRecentActivityQuery, useGetReportingDetailsQuery, useGetReportingSummaryQuery } from "@/redux/Reporting/Reportingapi";
+import { SUMMARY_CARDS, ASSET_HEALTH_CARDS } from "@/types/tokens";
 
 export function ReportingDashboard() {
   const [activeTab, setActiveTab] = useState<(typeof TABS)[number]>("Summary");
   const [rangeIndex, setRangeIndex] = useState(0);
+  const [exporting, setExporting] = useState(false);
+  const contentRef = useRef<HTMLDivElement>(null);
 
   const filters = useMemo(() => {
     const end = new Date();
@@ -32,6 +30,35 @@ export function ReportingDashboard() {
   }, [rangeIndex]);
 
   const { data, isLoading, isFetching } = useGetReportingSummaryQuery(filters);
+  const { data: detailRows, isLoading: detailsLoading } = useGetReportingDetailsQuery(filters, {
+    skip: activeTab !== "Reporting Details" && activeTab !== "Export Data",
+  });
+  const { data: activityRows, isLoading: activityLoading } = useGetRecentActivityQuery(undefined, {
+    skip: activeTab !== "Recent Activity",
+  });
+
+  async function handleExportPdf() {
+    if (!contentRef.current) return;
+    setExporting(true);
+    try {
+      const [{ default: html2canvas }, { default: jsPDF }] = await Promise.all([
+        import("html2canvas"),
+        import("jspdf"),
+      ]);
+
+      const canvas = await html2canvas(contentRef.current, { scale: 2, backgroundColor: "#F8FAFF" });
+      const imgData = canvas.toDataURL("image/png");
+
+      const pdf = new jsPDF({ orientation: "portrait", unit: "px", format: [canvas.width, canvas.height] });
+      pdf.addImage(imgData, "PNG", 0, 0, canvas.width, canvas.height);
+      pdf.save(`reporting-${activeTab.toLowerCase().replace(/\s+/g, "-")}-${Date.now()}.pdf`);
+    } catch (err) {
+      console.error("[ReportingDashboard] PDF export failed:", err);
+      alert("Couldn't generate the PDF. Check the console for details.");
+    } finally {
+      setExporting(false);
+    }
+  }
 
   return (
     <div style={{ display: "flex", minHeight: "100vh", background: "#F8FAFF", fontFamily: "inherit" }}>
@@ -41,6 +68,8 @@ export function ReportingDashboard() {
         <ReportingHeader
           rangeLabel={RANGE_OPTIONS[rangeIndex].label}
           onCycleRange={() => setRangeIndex((i) => (i + 1) % RANGE_OPTIONS.length)}
+          onExport={handleExportPdf}
+          exporting={exporting}
         />
         <ReportingTabs activeTab={activeTab} onChange={setActiveTab} />
         <ReportingFiltersBar />
@@ -58,20 +87,42 @@ export function ReportingDashboard() {
             ))}
           </div>
         ) : (
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
-            <CreatedVsCompletedCard data={data.createdVsCompleted} />
-            <ReactiveVsRepeatableCard data={data.reactiveVsRepeatable} />
-            <StatusCard data={data.statusBreakdown} />
-            <PriorityCard data={data.priorityBreakdown} />
-            <ResolutionTimeCard data={data.averageResolutionTime} />
-            <CostRollupCard data={data.costRollup} />
-            <TechnicianWorkloadCard data={data.technicianWorkload} />
-            <EquipmentReliabilityCard data={data.equipmentReliability} />
-            <LocationBreakdownCard data={data.locationBreakdown} />
-            <CategoryBreakdownCard data={data.categoryBreakdown} />
-            <div style={{ gridColumn: "1 / -1" }}>
-              <OverdueRequestsCard data={data.overdueRequests} />
-            </div>
+          <div ref={contentRef}>
+            {activeTab === "Summary" && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
+                {SUMMARY_CARDS.map((id) =>
+                  FULL_WIDTH_CARDS.includes(id) ? (
+                    <div key={id} style={{ gridColumn: "1 / -1" }}>
+                      {renderCard(id, data)}
+                    </div>
+                  ) : (
+                    <div key={id}>{renderCard(id, data)}</div>
+                  ),
+                )}
+              </div>
+            )}
+
+            {activeTab === "Asset Health" && (
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
+                {ASSET_HEALTH_CARDS.map((id) => (
+                  <div key={id}>{renderCard(id, data)}</div>
+                ))}
+              </div>
+            )}
+
+            {activeTab === "Reporting Details" && (
+              <ReportingDetailsTable data={detailRows ?? []} isLoading={detailsLoading} />
+            )}
+
+            {activeTab === "Recent Activity" && (
+              <RecentActivityCard data={activityRows ?? []} isLoading={activityLoading} />
+            )}
+
+            {activeTab === "Export Data" && (
+              <ExportDataPanel summary={data} details={detailRows ?? []} onExportPdf={handleExportPdf} />
+            )}
+
+            {activeTab === "Custom Dashboards" && <CustomDashboardsPanel data={data} />}
           </div>
         )}
       </main>

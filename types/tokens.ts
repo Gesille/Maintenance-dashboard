@@ -1,7 +1,28 @@
 import { Assignee, WOPriority, WOStatus } from "./types";
 import { TicketStatus, TicketCategory } from "@/redux/Supportticket/Supportticketapi";
 
+export const INDIGO = "#6366F1";
 
+export const VIOLET = "#8B5CF6";
+
+export const CHART_PALETTE = [
+  INDIGO, VIOLET, "#22C55E", "#F97316", "#0EA5E9", "#EC4899", "#F59E0B", "#14B8A6",
+];
+export const TABS = [
+  "Summary",
+  "Asset Health",
+  "Reporting Details",
+  "Recent Activity",
+  "Export Data",
+  "Custom Dashboards",
+] as const;
+
+export const RANGE_OPTIONS = [
+  { label: "Last 7 days", days: 7 },
+  { label: "Weekly Reports", days: 7 },
+  { label: "Last 30 days", days: 30 },
+  { label: "Last 90 days", days: 90 },
+] as const;
 // ── Status config ─────────────────────────────────────────────────────────────
 export const STATUS_CONFIG: Record<
   WOStatus,
@@ -175,12 +196,11 @@ export const MAINTENANCE_STATUS_CONFIG: Record<
   cancel:         { label: "Cancelled",      dot: "#94A3B8" },
 };
 
-export const STATUS_ORDER: Array<{ key: keyof typeof MAINTENANCE_STATUS_CONFIG }> = [
-  { key: "new" },
-  { key: "under_repair" },
-  { key: "pending_review" },
-  { key: "done" },
-  { key: "cancel" },
+export const STATUS_ORDER: Array<{ key: "open" | "inProgress" | "onHold" | "done"; woKey: "open" | "on_hold" | "in_progress" | "done" }> = [
+  { key: "open", woKey: "open" },
+  { key: "onHold", woKey: "on_hold" },
+  { key: "inProgress", woKey: "in_progress" },
+  { key: "done", woKey: "done" },
 ];
 
 export const PRIORITY_LABEL: Record<string, string> = {
@@ -189,10 +209,60 @@ export const PRIORITY_LABEL: Record<string, string> = {
   low: "Low",
   none: "None",
 };
-
 export const MAINTENANCE_PRIORITY_CONFIG: Record<string, { text: string }> = {
   high:   { text: "#B91C1C" },
   medium: { text: "#92400E" },
   low:    { text: "#166534" },
   none:   { text: "#94A3B8" },
 };
+export const ALL_CARD_IDS = [
+  "createdVsCompleted",
+  "reactiveVsRepeatable",
+  "status",
+  "priority",
+  "resolutionTime",
+  "costRollup",
+  "technicianWorkload",
+  "equipmentReliability",
+  "locationBreakdown",
+  "categoryBreakdown",
+  "overdue",
+] as const;
+
+export type CardId = (typeof ALL_CARD_IDS)[number];
+
+export const CARD_LABELS: Record<CardId, string> = {
+  createdVsCompleted: "Created vs Completed",
+  reactiveVsRepeatable: "Reactive vs Repeatable",
+  status: "Status",
+  priority: "Priority",
+  resolutionTime: "Avg Resolution Time",
+  costRollup: "Asset Value",
+  technicianWorkload: "Technician Workload",
+  equipmentReliability: "Equipment Reliability",
+  locationBreakdown: "By Location",
+  categoryBreakdown: "By Category",
+  overdue: "Overdue Requests",
+};
+export const SUMMARY_CARDS: CardId[] = [
+  "createdVsCompleted",
+  "reactiveVsRepeatable",
+  "status",
+  "priority",
+  "resolutionTime",
+  "costRollup",
+  "technicianWorkload",
+  "equipmentReliability",
+  "locationBreakdown",
+  "categoryBreakdown",
+  "overdue",
+];
+
+export const ASSET_HEALTH_CARDS: CardId[] = [
+  "equipmentReliability",
+  "costRollup",
+  "locationBreakdown",
+  "categoryBreakdown",
+];
+
+export const CUSTOM_DASHBOARD_STORAGE_KEY = "reporting.customDashboard.cards.v1";

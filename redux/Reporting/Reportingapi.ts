@@ -32,6 +32,10 @@ export interface ReactiveVsRepeatableReport {
 }
 
 export interface StatusBreakdownReport {
+  new: number;
+  underRepair: number;
+  pendingReview: number;
+  cancel: number;
   open: number;
   inProgress: number;
   onHold: number;
@@ -117,7 +121,30 @@ export interface ReportingSummary {
   categoryBreakdown: CategoryBreakdownRow[];
   costRollup: CostRollupReport;
 }
+export interface RequestDetailRow {
+  id: number;
+  name: string;
+  status: string;
+  priority: string;
+  equipmentName: string;
+  restaurant: string | null;
+  category: string | null;
+  reportedBy: string;
+  technicianNames: string[];
+  createdAt: string;
+  scheduleDate: string | null;
+  closeDate: string | null;
+}
 
+export interface ActivityRow {
+  id: number;
+  name: string;
+  status: string;
+  priority: string;
+  equipmentName: string;
+  actionLabel: string;
+  actionAt: string;
+}
 interface ApiEnvelope<T> {
   success: boolean;
   data: T;
@@ -249,7 +276,15 @@ export const reportingApi = apiSlice.injectEndpoints({
       }),
       transformResponse: (res: ApiEnvelope<CategoryBreakdownRow[]>) => res.data,
     }),
+getReportingDetails: builder.query<RequestDetailRow[], { startDate?: string; endDate?: string }>({
+  query: (filters) => ({ url: "/reporting/details", params: filters }),
+  transformResponse: (res: { data: RequestDetailRow[] }) => res.data,
+}),
 
+getRecentActivity: builder.query<ActivityRow[], void>({
+  query: () => "/reporting/activity",
+  transformResponse: (res: { data: ActivityRow[] }) => res.data,
+}),
     // ─── Cost rollup ───────────────────────────────────────────────────────────
     // Not date-filtered on the backend — reflects current asset state.
     getCostRollup: builder.query<CostRollupReport, void>({
@@ -277,4 +312,6 @@ export const {
   useGetLocationBreakdownQuery,
   useGetCategoryBreakdownQuery,
   useGetCostRollupQuery,
+  useGetReportingDetailsQuery,
+  useGetRecentActivityQuery,
 } = reportingApi;

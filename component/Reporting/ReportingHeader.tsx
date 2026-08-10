@@ -4,9 +4,13 @@ import { ChevronDown, Building2, Download } from "lucide-react";
 export function ReportingHeader({
   rangeLabel,
   onCycleRange,
+  onExport,
+  exporting,
 }: {
   rangeLabel: string;
   onCycleRange: () => void;
+  onExport: () => void;
+  exporting: boolean;
 }) {
   return (
     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 18 }}>
@@ -39,15 +43,17 @@ export function ReportingHeader({
           Organization
         </button>
         <button
+          onClick={onExport}
+          disabled={exporting}
           style={{
             display: "flex", alignItems: "center", gap: 7, fontSize: 12.5, fontWeight: 700,
             color: "#fff", background: "linear-gradient(135deg, #6366F1, #8B5CF6)", border: "none",
-            borderRadius: 10, padding: "9px 16px", cursor: "pointer",
-            boxShadow: "0 4px 14px rgba(99,102,241,0.35)",
+            borderRadius: 10, padding: "9px 16px", cursor: exporting ? "wait" : "pointer",
+            boxShadow: "0 4px 14px rgba(99,102,241,0.35)", opacity: exporting ? 0.7 : 1,
           }}
         >
           <Download size={14} />
-          Export to PDF
+          {exporting ? "Exporting…" : "Export to PDF"}
         </button>
       </div>
     </div>
