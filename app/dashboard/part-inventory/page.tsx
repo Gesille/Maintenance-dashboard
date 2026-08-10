@@ -21,6 +21,10 @@ import {
   useCreatePartMutation,
 } from "@/redux/Part/Partapi";
 import { CATEGORY_COLORS } from "@/types/tokens";
+import { useGetAllRestaurantsQuery } from "@/redux/Restaurant/Restaurantapi";
+import { useGetAllLocationsQuery } from "@/redux/Location/Locationapi";
+import { useGetAllVendorsQuery } from "@/redux/Vendor/Vendorapi";
+import { data } from "framer-motion/m";
 
 // ─── Design tokens ──────────────────────────────────────────────────────────
 // Same neutral base as before, but paired with a small set of saturated
@@ -875,12 +879,13 @@ function PartDetailPanel({
                 boxSizing: "border-box",
               }}
             >
-              <Field label="Reorder qty" value={part.reorderQuantity ? String(part.reorderQuantity) : "—"} />
-              <Field label="Vendor" value={part.vendor || "—"} />
-              <Field label="Vendor part #" value={part.vendorPartNumber || "—"} />
-              <Field label="Location" value={part.location || "—"} />
-              <Field label="Barcode" value={part.barcode || "—"} />
-              <Field label="Unit" value={part.unitOfMeasure} />
+         <Field label="Reorder qty" value={part.reorderQuantity ? String(part.reorderQuantity) : "—"} />
+<Field label="Vendor" value={part.vendor || "—"} />
+<Field label="Vendor part #" value={part.vendorPartNumber || "—"} />
+<Field label="Location" value={part.location || "—"} />
+<Field label="Restaurant" value={part.restaurant || "—"} />
+<Field label="Barcode" value={part.barcode || "—"} />
+<Field label="Unit" value={part.unitOfMeasure} />
             </div>
             {part.description && (
               <p style={{ fontSize: 13, color: COLOR.textSecondary, marginTop: 14, lineHeight: 1.6, wordBreak: "break-word" }}>
@@ -1264,7 +1269,14 @@ function NewPartModal({
 }) {
   const [form, setForm] = useState<CreatePartInput>(EMPTY_PART_FORM);
   const [createPart, { isLoading }] = useCreatePartMutation();
+  const { data: vendorsData } = useGetAllVendorsQuery();
+  const vendors = vendorsData?.data ?? [];
+  const { data: locationsData } = useGetAllLocationsQuery();
+  const locations = locationsData?.data ?? [];
+  const { data: restaurantsData } = useGetAllRestaurantsQuery();
+  const restaurants = restaurantsData?.data ?? [];
 
+  if (!open) return null;
   if (!open) return null;
 
   const set = <K extends keyof CreatePartInput>(key: K, value: CreatePartInput[K]) =>
@@ -1417,11 +1429,65 @@ function NewPartModal({
             </div>
           </ModalSection>
 
-          <ModalSection title="Sourcing" icon="ti-truck-delivery">
+       <ModalSection title="Sourcing" icon="ti-truck-delivery">
             <div style={{ display: "flex", gap: 10 }}>
-              <ModalInput label="Vendor" value={form.vendor ?? ""} onChange={(v) => set("vendor", v || null)} placeholder="Supplier name" />
-              <ModalInput label="Location" value={form.location ?? ""} onChange={(v) => set("location", v || null)} placeholder="Shelf / bin" />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <ModalLabel>Vendor</ModalLabel>
+                <select
+                  value={form.vendor ?? ""}
+                  onChange={(e) => set("vendor", e.target.value || null)}
+                  style={selectStyle}
+                >
+                  <option value="">Select vendor…</option>
+                  {vendors.map((v) => (
+                    <option key={v.id} value={v.name}>
+                      {v.name}
+                    </option>
+                  ))}
+                </select>
+                <a href="/dashboard/vendors" target="_blank" rel="noopener noreferrer" style={sourcingLinkStyle}>
+                  Add a new vendor →
+                </a>
+              </div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <ModalLabel>Location</ModalLabel>
+                <select
+                  value={form.location ?? ""}
+                  onChange={(e) => set("location", e.target.value || null)}
+                  style={selectStyle}
+                >
+                  <option value="">Select location…</option>
+                  {locations.map((l) => (
+                    <option key={l.id} value={l.name}>
+                      {l.name}
+                    </option>
+                  ))}
+                </select>
+                <a href="/dashboard/locations" target="_blank" rel="noopener noreferrer" style={sourcingLinkStyle}>
+                  Add a new location →
+                </a>
+              </div>
             </div>
+
+            <div>
+              <ModalLabel>Restaurant / Site</ModalLabel>
+              <select
+                value={form.restaurant ?? ""}
+                onChange={(e) => set("restaurant", e.target.value || null)}
+                style={selectStyle}
+              >
+                <option value="">Select restaurant…</option>
+                {restaurants.map((r) => (
+                  <option key={r.id} value={r.name}>
+                    {r.name}
+                  </option>
+                ))}
+              </select>
+              <a href="/dashboard/locations" target="_blank" rel="noopener noreferrer" style={sourcingLinkStyle}>
+                Add a new restaurant →
+              </a>
+            </div>
+
             <ModalInput label="Barcode" value={form.barcode ?? ""} onChange={(v) => set("barcode", v || null)} placeholder="Scan or enter code" />
           </ModalSection>
 
@@ -1536,6 +1602,15 @@ const selectStyle: React.CSSProperties = {
   boxSizing: "border-box",
   color: COLOR.textPrimary,
   background: COLOR.surface,
+};
+
+const sourcingLinkStyle: React.CSSProperties = {
+  fontSize: 11,
+  color: COLOR.accent,
+  fontWeight: 600,
+  textDecoration: "none",
+  marginTop: 5,
+  display: "inline-block",
 };
 
 function ModalInput({

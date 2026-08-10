@@ -17,6 +17,7 @@ export interface Part {
   vendor: string | null;
   vendorPartNumber: string | null;
   location: string | null;
+  restaurant: string | null;
   barcode: string | null;
   linkedEquipmentIds: number[];
   active?: boolean;
@@ -48,6 +49,7 @@ export const EMPTY_PART_FORM: PartFormInput = {
   vendorPartNumber: null,
   location: null,
   barcode: null,
+  restaurant: null,
   linkedEquipmentIds: [],
 };
 

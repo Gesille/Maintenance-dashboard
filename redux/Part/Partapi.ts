@@ -16,6 +16,7 @@ export interface Part {
   vendor: string | null;
   vendorPartNumber: string | null;
   location: string | null;
+   restaurant: string | null;
   barcode: string | null;
   linkedEquipmentIds: number[];
   active: boolean;
@@ -55,6 +56,7 @@ export interface CreatePartInput {
   vendorPartNumber?: string | null;
   location?: string | null;
   barcode?: string | null;
+  restaurant?: string | null;
   linkedEquipmentIds?: number[];
 }
 
@@ -73,6 +75,7 @@ export type UpdatePartInput = Partial<
     | "vendorPartNumber"
     | "location"
     | "barcode"
+    | "restaurant"
   >
 >;
 
@@ -90,6 +93,7 @@ export const EMPTY_PART_FORM: CreatePartInput = {
   vendorPartNumber: null,
   location: null,
   barcode: null,
+  restaurant: null,
   linkedEquipmentIds: [],
 };
 
@@ -98,6 +102,7 @@ export interface PartFilters {
   equipmentId?: number;
   lowStockOnly?: boolean;
   search?: string;
+  restaurant?: string;
 }
 
 interface ListResponse {
