@@ -163,28 +163,26 @@ export const TICKET_CATEGORY_CONFIG: Record<
   equipment: { label: "Equipment", bg: "#FFF7ED", text: "#C2410C", icon: "ti-building-factory-2" },
   other: { label: "Other", bg: "#F9FAFB", text: "#374151", icon: "ti-dots" },
 };
-
 export const NAV_ITEMS = [
-  { label: "Work order & Requests", icon: "{label-clipboard-list", href: "/dashboard/work-orders" },
-  { label: "Purchase Orders", icon: "ti-shopping-cart", href: "/dashboard/purchase-orders" },
+  { label: "Work order & Requests", icon: "ti-clipboard-list",  href: "/dashboard/work-orders" },
+  { label: "Purchase Orders", icon: "ti-shopping-cart",  href: "/dashboard/purchase-orders" },
   { label: "Support Tickets", icon: "ti-ticket", href: "/dashboard/support-tickets" },
-  { label: "Reporting", icon: "ti-pie-chart", href: "/dashboard/report" },
-  { label: "Parts Inventory", icon: "ti-package", href: "/dashboard/part-inventory" },
-];
+  { label: "Reporting", icon: "ti-chart-bar", href: "/dashboard/report" },
+  { label: "Parts Inventory", icon: "ti-chart-bar", href: "/dashboard/part-inventory" },
 
+];
+//
 export const NAV_ASSET_ITEMS = [
-  { label: "Equipment", icon: "ti-settings", href: "/dashboard/equipment" },
-  { label: "QR Code", icon: "ti-qrcode", href: "/dashboard/qr-code" },
-  { label: "Meters", icon: "ti-dashboard", href: "/dashboard/meters" },
+  { label: "Equipment", icon: "ti-building-factory-2", href: "/dashboard/equipment" },
+  { label: "QR Code ", icon: "ti-map-pin", href: "/dashboard/qr-code" },
+  { label: "Meters", icon: "ti-map-pin", href: "/dashboard/meters" },
 ];
 
 export const NAV_CONFIG_ITEMS = [
   { label: "Teams / Users", icon: "ti-users", href: "/dashboard/users" },
-  { label: "Categories", icon: "ti-menu-alt", href: "/dashboard/category" },
+  { label: "Categories", icon: "ti-bolt", href: "/dashboard/category" },
   { label: "Locations", icon: "ti-location-pin", href: "/dashboard/locations" },
 ];
-
-
 
 
 export const MAINTENANCE_STATUS_CONFIG: Record<
