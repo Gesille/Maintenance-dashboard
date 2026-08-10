@@ -142,8 +142,17 @@ function toWorkOrder(r: MaintenanceRequest, index: number): WorkOrder {
     description: stripHtml(r.description),
     asset: r.equipment?.name ?? "—",
     assetCode: r.equipment?.assetCode ?? null,
+    reference: r.equipment?.reference ?? null,
     serialNo: r.equipment?.serialNo ?? null,
     model: r.equipment?.model ?? null,
+    vendor: r.equipment?.vendor ?? null,
+    vendorReference: r.equipment?.vendorReference ?? null,
+    owner: r.equipment?.owner ?? null,
+    cost: r.equipment?.cost ?? null,
+    assignedDate: r.equipment?.assignedDate ?? null,
+    effectiveDate: r.equipment?.effectiveDate ?? null,
+    scrapDate: r.equipment?.scrapDate ?? null,
+    warrantyExpirationDate: r.equipment?.warrantyExpirationDate ?? null,
     location,
     category: normCategory(r.category?.name),
     categoryLabel: r.category?.name ?? "—",
@@ -159,8 +168,8 @@ function toWorkOrder(r: MaintenanceRequest, index: number): WorkOrder {
     media: r.media ?? [],
     scheduleDateRaw: r.scheduleDate,
     checklist: r.checklist?.items ?? [],
-    checklistResult: r.checklist?.result ?? null,    
-    signatureUrl: r.checklist?.signatureUrl ?? null, 
+    checklistResult: r.checklist?.result ?? null,
+    signatureUrl: r.checklist?.signatureUrl ?? null,
   };
 }
 

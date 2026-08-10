@@ -16,36 +16,48 @@ export interface ChecklistItem {
 
 export interface WorkOrder {
   // Core
-  id: string;           // "#99"
-  numericId: number;    // 99  (for API calls)
+  id: string;
+  numericId: number;
   title: string;
   requestedBy: string;
   status: WOStatus;
   priority: WOPriority;
-media: { url: string; type: "image" | "video" }[];
+  media: { url: string; type: "image" | "video" }[];
+
   // Dates
-  
   scheduleEnd: string;
   createDate: string;
   duration: number;
   overdue: boolean;
   completedOn?: string;
-closeDateRaw?: string | null;
+  closeDateRaw?: string | null;
+
   // Equipment
   asset: string;
   assetCode: string | null;
+  reference: string | null;         
   serialNo: string | null;
   model: string | null;
+  vendor: string | null;            
+  vendorReference: string | null;  
+  owner: string | null;          
+  cost: number | null;              
+  assignedDate: string | null;    
+  effectiveDate: string | null;     
+  scrapDate: string | null;         
+  warrantyExpirationDate: string | null; 
   location: string;
-restaurant: string;
+  restaurant: string;
+
   // Classification
-  category: string;           
-  categoryLabel: string;     
+  category: string;
+  categoryLabel: string;
   maintenanceTeam: string;
   maintenanceType: string;
   stage: string;
   isRecurring: boolean;
-scheduleDateRaw?: string | null;
+  scheduleDateRaw?: string | null;
+
   // Content
   description: string;
   assignees: Assignee[];

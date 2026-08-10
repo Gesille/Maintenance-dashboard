@@ -496,9 +496,21 @@ export function WODetailPanel({
               }}
             >
               <EquipRow icon={<Wrench size={13} color="#A5B4FC" />} label="Asset" value={wo.asset} />
-              <EquipRow icon={<MapPin size={13} color="#A5B4FC" />} label="Location" value={wo.location} divider />
-              <EquipRow icon={<MapPin size={13} color="#A5B4FC" />} label="Restaurant" value={wo.restaurant} divider />
-              <EquipRow icon={<Tag size={13} color="#A5B4FC" />} label="Category" value={wo.categoryLabel} divider />
+  <EquipRow icon={<MapPin size={13} color="#A5B4FC" />} label="Location" value={wo.location} divider />
+  <EquipRow icon={<MapPin size={13} color="#A5B4FC" />} label="Restaurant" value={wo.restaurant} divider />
+  <EquipRow icon={<Tag size={13} color="#A5B4FC" />} label="Category" value={wo.categoryLabel} divider />
+  <EquipRow icon={<i className="ti ti-barcode" style={{ fontSize: 13, color: "#A5B4FC" }} aria-hidden="true" />} label="Asset code" value={wo.assetCode ?? ""} divider />
+  <EquipRow icon={<i className="ti ti-hash" style={{ fontSize: 13, color: "#A5B4FC" }} aria-hidden="true" />} label="Reference" value={wo.reference ?? ""} divider />
+  <EquipRow icon={<i className="ti ti-versions" style={{ fontSize: 13, color: "#A5B4FC" }} aria-hidden="true" />} label="Model" value={wo.model ?? ""} divider />
+  <EquipRow icon={<i className="ti ti-fingerprint" style={{ fontSize: 13, color: "#A5B4FC" }} aria-hidden="true" />} label="Serial no." value={wo.serialNo ?? ""} divider />
+  <EquipRow icon={<i className="ti ti-building-store" style={{ fontSize: 13, color: "#A5B4FC" }} aria-hidden="true" />} label="Vendor" value={wo.vendor ?? ""} divider />
+  <EquipRow icon={<i className="ti ti-file-invoice" style={{ fontSize: 13, color: "#A5B4FC" }} aria-hidden="true" />} label="Vendor ref." value={wo.vendorReference ?? ""} divider />
+  <EquipRow icon={<i className="ti ti-user-star" style={{ fontSize: 13, color: "#A5B4FC" }} aria-hidden="true" />} label="Owner" value={wo.owner ?? ""} divider />
+  <EquipRow icon={<i className="ti ti-currency-dollar" style={{ fontSize: 13, color: "#A5B4FC" }} aria-hidden="true" />} label="Cost" value={wo.cost ? `$${wo.cost}` : ""} divider />
+  <EquipRow icon={<i className="ti ti-calendar-event" style={{ fontSize: 13, color: "#A5B4FC" }} aria-hidden="true" />} label="Assigned date" value={wo.assignedDate ?? ""} divider />
+  <EquipRow icon={<i className="ti ti-calendar-check" style={{ fontSize: 13, color: "#A5B4FC" }} aria-hidden="true" />} label="Effective date" value={wo.effectiveDate ?? ""} divider />
+  <EquipRow icon={<i className="ti ti-shield-check" style={{ fontSize: 13, color: "#A5B4FC" }} aria-hidden="true" />} label="Warranty exp." value={wo.warrantyExpirationDate ?? ""} divider />
+  <EquipRow icon={<i className="ti ti-calendar-x" style={{ fontSize: 13, color: "#A5B4FC" }} aria-hidden="true" />} label="Scrap date" value={wo.scrapDate ?? ""} divider />
               {wo.maintenanceType !== "—" && (
                 <EquipRow
                   icon={<i className="ti ti-settings" style={{ fontSize: 13, color: "#A5B4FC" }} aria-hidden="true" />}
