@@ -4,7 +4,7 @@ import { CardShell } from "../shared/CardShell";
 import { Stat } from "../shared/Stat";
 
 import type { StatusBreakdownReport } from "@/redux/Reporting/Reportingapi";
-import {  STATUS_ORDER } from "../Reporting/reporting.tokens";
+import { STATUS_ORDER } from "../Reporting/reporting.tokens";
 import { MAINTENANCE_STATUS_CONFIG } from "@/types/tokens";
 
 // backend StatusBreakdownReport fields: new, underRepair, pendingReview, done, cancel, total
@@ -17,14 +17,20 @@ const STATUS_VALUE_KEY = {
 } as const;
 
 export function StatusCard({ data }: { data: StatusBreakdownReport }) {
-  const donutData = STATUS_ORDER.map(({ key }) => {
-    const config = MAINTENANCE_STATUS_CONFIG[key];
-    return {
-      name: config.label,
-      value: data[STATUS_VALUE_KEY[key]],
-      color: config.dot,
-    };
-  }).filter((d) => d.value > 0);
+  const donutData = STATUS_ORDER
+    .map(({ key }) => {
+      const config = MAINTENANCE_STATUS_CONFIG[key];
+      if (!config) {
+        console.warn(`[StatusCard] Missing MAINTENANCE_STATUS_CONFIG entry for key: "${key}"`);
+        return null;
+      }
+      return {
+        name: config.label,
+        value: data[STATUS_VALUE_KEY[key]] ?? 0,
+        color: config.dot,
+      };
+    })
+    .filter((d): d is { name: string; value: number; color: string } => d !== null && d.value > 0);
 
   return (
     <CardShell title="Status" onAdd>
@@ -32,7 +38,15 @@ export function StatusCard({ data }: { data: StatusBreakdownReport }) {
         <div style={{ width: 130, height: 130, flexShrink: 0 }}>
           <ResponsiveContainer width="100%" height="100%">
             <PieChart>
-              <Pie data={donutData} dataKey="value" nameKey="name" innerRadius={40} outerRadius={62} paddingAngle={2} stroke="none">
+              <Pie
+                data={donutData}
+                dataKey="value"
+                nameKey="name"
+                innerRadius={40}
+                outerRadius={62}
+                paddingAngle={2}
+                stroke="none"
+              >
                 {donutData.map((entry) => (
                   <Cell key={entry.name} fill={entry.color} />
                 ))}
@@ -44,10 +58,11 @@ export function StatusCard({ data }: { data: StatusBreakdownReport }) {
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 20px", flex: 1 }}>
           {STATUS_ORDER.map(({ key }) => {
             const config = MAINTENANCE_STATUS_CONFIG[key];
+            if (!config) return null;
             return (
               <Stat
                 key={key}
-                value={data[STATUS_VALUE_KEY[key]]}
+                value={data[STATUS_VALUE_KEY[key]] ?? 0}
                 label={config.label}
                 swatch={config.dot}
               />
