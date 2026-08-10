@@ -3,15 +3,25 @@ import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
 import { CardShell } from "../shared/CardShell";
 import { Stat } from "../shared/Stat";
 
-import { STATUS_CONFIG } from "@/types/tokens";
 import type { StatusBreakdownReport } from "@/redux/Reporting/Reportingapi";
 import { STATUS_ORDER } from "../Reporting/reporting.tokens";
+import { MAINTENANCE_STATUS_CONFIG } from "@/types/tokens";
+
+// backend returns { new, underRepair, pendingReview, done, cancel, total }
+// this maps each token key -> the matching field on that object
+const STATUS_VALUE_KEY = {
+  new: "new",
+  under_repair: "underRepair",
+  pending_review: "pendingReview",
+  done: "done",
+  cancel: "cancel",
+} as const;
 
 export function StatusCard({ data }: { data: StatusBreakdownReport }) {
-  const donutData = STATUS_ORDER.map(({ key, woKey }) => ({
-    name: STATUS_CONFIG[woKey].label,
-    value: data[key],
-    color: STATUS_CONFIG[woKey].dot,
+  const donutData = STATUS_ORDER.map(({ key }) => ({
+    name: MAINTENANCE_STATUS_CONFIG[key].label,
+    value: data[STATUS_VALUE_KEY[key]],
+    color: MAINTENANCE_STATUS_CONFIG[key].dot,
   })).filter((d) => d.value > 0);
 
   return (
@@ -30,8 +40,13 @@ export function StatusCard({ data }: { data: StatusBreakdownReport }) {
           </ResponsiveContainer>
         </div>
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px 20px", flex: 1 }}>
-          {STATUS_ORDER.map(({ key, woKey }) => (
-            <Stat key={key} value={data[key]} label={STATUS_CONFIG[woKey].label} swatch={STATUS_CONFIG[woKey].dot} />
+          {STATUS_ORDER.map(({ key }) => (
+            <Stat
+              key={key}
+              value={data[STATUS_VALUE_KEY[key]]}
+              label={MAINTENANCE_STATUS_CONFIG[key].label}
+              swatch={MAINTENANCE_STATUS_CONFIG[key].dot}
+            />
           ))}
         </div>
       </div>

@@ -162,3 +162,37 @@ export const NAV_CONFIG_ITEMS = [
   { label: "Categories", icon: "ti-bolt", href: "/dashboard/category" },
   { label: "Settings", icon: "ti-settings", href: "/dashboard/settings" },
 ];
+
+
+export const MAINTENANCE_STATUS_CONFIG: Record<
+  "new" | "under_repair" | "pending_review" | "done" | "cancel",
+  { label: string; dot: string }
+> = {
+  new:            { label: "New",            dot: "#3B82F6" },
+  under_repair:   { label: "Under Repair",   dot: "#F97316" },
+  pending_review: { label: "Pending Review", dot: "#8B5CF6" },
+  done:           { label: "Done",           dot: "#22C55E" },
+  cancel:         { label: "Cancelled",      dot: "#94A3B8" },
+};
+
+export const STATUS_ORDER: Array<{ key: keyof typeof MAINTENANCE_STATUS_CONFIG }> = [
+  { key: "new" },
+  { key: "under_repair" },
+  { key: "pending_review" },
+  { key: "done" },
+  { key: "cancel" },
+];
+
+export const PRIORITY_LABEL: Record<string, string> = {
+  high: "High",
+  medium: "Medium",
+  low: "Low",
+  none: "None",
+};
+
+export const MAINTENANCE_PRIORITY_CONFIG: Record<string, { text: string }> = {
+  high:   { text: "#B91C1C" },
+  medium: { text: "#92400E" },
+  low:    { text: "#166534" },
+  none:   { text: "#94A3B8" },
+};
