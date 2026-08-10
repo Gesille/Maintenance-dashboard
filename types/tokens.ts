@@ -168,14 +168,14 @@ export const NAV_ITEMS = [
   { label: "Purchase Orders", icon: "ti-shopping-cart",  href: "/dashboard/purchase-orders" },
   { label: "Support Tickets", icon: "ti-ticket", href: "/dashboard/support-tickets" },
   { label: "Reporting", icon: "ti-chart-bar", href: "/dashboard/report" },
-  { label: "Parts Inventory", icon: "ti-chart-bar", href: "/dashboard/part-inventory" },
+  { label: "Parts Inventory", icon: "ti-package", href: "/dashboard/part-inventory" },
 
 ];
 //
 export const NAV_ASSET_ITEMS = [
-  { label: "Equipment", icon: "ti-building-factory-2", href: "/dashboard/equipment" },
-  { label: "QR Code ", icon: "ti-map-pin", href: "/dashboard/qr-code" },
-  { label: "Meters", icon: "ti-map-pin", href: "/dashboard/meters" },
+  { label: "Equipment", icon: "ti-settings", href: "/dashboard/equipment" },
+  { label: "QR Code ", icon: "ti-qrcode", href: "/dashboard/qr-code" },
+  { label: "Meters", icon: "ti-dashboard", href: "/dashboard/meters" },
 ];
 
 export const NAV_CONFIG_ITEMS = [
