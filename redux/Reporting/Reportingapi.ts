@@ -1,14 +1,14 @@
 import { apiSlice } from "../api/apiSlice";
 
-// ─── Shared filter shape (mirrors backend ReportingFilters) ─────────────────
-// Dates are passed as ISO strings on the wire; the backend parses them into
-// real Date objects before hitting Mongo.
-
 export interface ReportingFilters {
   startDate?: string;
   endDate?: string;
+  priority?: string;
+  technicianId?: string;
+  restaurant?: string;
+  dueStart?: string;
+  dueEnd?: string;
 }
-
 // ─── Response shapes (mirror backend Reporting.service.ts) ──────────────────
 
 export interface CreatedVsCompletedPoint {
@@ -148,11 +148,25 @@ interface ApiEnvelope<T> {
 }
 
 // ─── Query string helper ─────────────────────────────────────────────────────
+export interface ReportingFilters {
+  startDate?: string;
+  endDate?: string;
+  priority?: string;
+  technicianId?: string;
+  restaurant?: string;
+  dueStart?: string;
+  dueEnd?: string;
+}
 
 function buildQuery(filters: ReportingFilters = {}): string {
   const params = new URLSearchParams();
   if (filters.startDate) params.set("startDate", filters.startDate);
   if (filters.endDate) params.set("endDate", filters.endDate);
+  if (filters.priority) params.set("priority", filters.priority);
+  if (filters.technicianId) params.set("technicianId", filters.technicianId);
+  if (filters.restaurant) params.set("restaurant", filters.restaurant);
+  if (filters.dueStart) params.set("dueStart", filters.dueStart);
+  if (filters.dueEnd) params.set("dueEnd", filters.dueEnd);
   const qs = params.toString();
   return qs ? `?${qs}` : "";
 }
