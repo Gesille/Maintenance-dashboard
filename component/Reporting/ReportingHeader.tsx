@@ -32,16 +32,7 @@ export function ReportingHeader({
       </div>
 
       <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
-        <button
-          style={{
-            display: "flex", alignItems: "center", gap: 7, fontSize: 12.5, fontWeight: 600,
-            color: "#475569", background: "#fff", border: "1px solid #E2E8F0", borderRadius: 10,
-            padding: "9px 14px", cursor: "pointer",
-          }}
-        >
-          <Building2 size={14} />
-          Organization
-        </button>
+       
         <button
           onClick={onExport}
           disabled={exporting}
