@@ -183,7 +183,7 @@ export const NAV_CONFIG_ITEMS = [
   { label: "Categories", icon: "ti-bolt", href: "/dashboard/category" },
   { label: "Locations", icon: "ti-location-pin", href: "/dashboard/locations" },
   { label: "Vendors", icon: "ti-user", href: "/dashboard/vendors" },
-  { label: "Procedure Library", icon: "ti-user", href: "/dashboard/procedures" },
+  { label: "Procedure Library", icon: "ti-book", href: "/dashboard/procedures" },
 ];
 
 
