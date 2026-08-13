@@ -51,201 +51,89 @@ export function ProcedureDetailPanel({
   const [editing, setEditing] = useState(false);
 
   return (
+
     <div style={{ flex: 1, overflowY: "auto", background: "#F8FAFF" }}>
-      <div style={{ maxWidth: 880, margin: "0 auto", padding: "28px 32px 60px" }}>
+      <div className="pd-root" style={{ maxWidth: 880, margin: "0 auto", padding: "28px 32px 60px" }}>
         {/* Header */}
-        <div
+        <div className="pd-header" style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 32, marginBottom: 24 }}>
+          {/* LEFT */}
+          <div className="pd-header-left" style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 10, marginBottom: 12, flexWrap: "wrap" }}>
+              <span style={{ display: "inline-flex", alignItems: "center", gap: 6, padding: "4px 10px", borderRadius: 999, fontSize: 11.5, fontWeight: 700, background: statusStyle.bg, color: statusStyle.fg, border: `1px solid ${statusStyle.border}`, lineHeight: 1.2 }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: statusStyle.dot }} />
+                {statusStyle.label}
+              </span>
+              <span style={{ fontSize: 12, color: "#9CA3AF" }}>
+                Updated {timeAgo(procedure.updatedAt)} · by {procedure.createdByName}
+              </span>
+            </div>
+
+            <h1 className="pd-title" style={{ fontSize: 25, fontWeight: 800, color: "#111827", margin: 0, letterSpacing: "-0.025em", lineHeight: 1.25 }}>
+              {procedure.title}
+            </h1>
+
+            {procedure.description && (
+              <p style={{ fontSize: 13.5, color: "#6B7280", lineHeight: 1.6, margin: "7px 0 0", maxWidth: 650 }}>
+                {procedure.description}
+              </p>
+            )}
+          </div>
+
+          {/* ACTIONS */}
+          <div className="pd-actions" style={{ display: "flex", alignItems: "center", gap: 8, flexShrink: 0, flexWrap: "wrap" }}>
+           <button
+  onClick={onAttach}
+  disabled={procedure.status !== "published"}
+  title={procedure.status !== "published" ? "Publish this procedure before attaching it to a work order" : undefined}
   style={{
-    display: "flex",
-    alignItems: "flex-start",
-    justifyContent: "space-between",
-    gap: 32,
-    marginBottom: 24,
+    height: 42,
+    padding: "0 15px",
+    display: "inline-flex",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    borderRadius: 11,
+    border: "1px solid #E5E7EB",
+    background: procedure.status !== "published" ? "#F3F4F6" : "#FFFFFF",
+    color: procedure.status !== "published" ? "#9CA3AF" : "#374151",
+    fontSize: 13,
+    fontWeight: 600,
+    cursor: procedure.status !== "published" ? "not-allowed" : "pointer",
+    boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+    transition: "all 0.15s ease",
   }}
 >
-  {/* LEFT */}
-  <div style={{ minWidth: 0, flex: 1 }}>
-    <div
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        marginBottom: 12,
-      }}
-    >
-      <span
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 6,
-          padding: "4px 10px",
-          borderRadius: 999,
-          fontSize: 11.5,
-          fontWeight: 700,
-          background: statusStyle.bg,
-          color: statusStyle.fg,
-          border: `1px solid ${statusStyle.border}`,
-          lineHeight: 1.2,
-        }}
-      >
-        <span
-          style={{
-            width: 6,
-            height: 6,
-            borderRadius: "50%",
-            background: statusStyle.dot,
-          }}
-        />
-        {statusStyle.label}
-      </span>
+  <i className="ti ti-link" style={{ fontSize: 16, color: "inherit" }} aria-hidden="true" />
+  Attach
+</button>
 
-      <span
-        style={{
-          fontSize: 12,
-          color: "#9CA3AF",
-        }}
-      >
-        Updated {timeAgo(procedure.updatedAt)} · by{" "}
-        {procedure.createdByName}
-      </span>
-    </div>
+            <button
+              onClick={onPublish}
+              disabled={isPublishing || procedure.fields.length === 0}
+              className="pd-btn"
+              style={{
+                height: 42, padding: "0 18px", display: "inline-flex", alignItems: "center", justifyContent: "center", gap: 8,
+                border: "none", borderRadius: 11,
+                background: isPublishing || procedure.fields.length === 0 ? "#D1D5DB" : "#8B5CF6",
+                color: "#FFFFFF", fontSize: 13, fontWeight: 700,
+                cursor: isPublishing || procedure.fields.length === 0 ? "not-allowed" : "pointer",
+                boxShadow: isPublishing || procedure.fields.length === 0 ? "none" : "0 4px 12px rgba(139, 92, 246, 0.22)",
+                transition: "all 0.15s ease", whiteSpace: "nowrap",
+              }}
+            >
+              <i className={isPublishing ? "ti ti-loader-2" : "ti ti-rocket"} style={{ fontSize: 15, ...(isPublishing ? { animation: "spin 1s linear infinite" } : {}) }} aria-hidden="true" />
+              <span className="pd-btn-label">{isPublishing ? "Publishing..." : "Publish"}</span>
+            </button>
 
-    <h1
-      style={{
-        fontSize: 25,
-        fontWeight: 800,
-        color: "#111827",
-        margin: 0,
-        letterSpacing: "-0.025em",
-        lineHeight: 1.25,
-      }}
-    >
-      {procedure.title}
-    </h1>
-
-    {procedure.description && (
-      <p
-        style={{
-          fontSize: 13.5,
-          color: "#6B7280",
-          lineHeight: 1.6,
-          margin: "7px 0 0",
-          maxWidth: 650,
-        }}
-      >
-        {procedure.description}
-      </p>
-    )}
-  </div>
-
-  {/* ACTIONS */}
-  <div
-    style={{
-      display: "flex",
-      alignItems: "center",
-      gap: 8,
-      flexShrink: 0,
-      paddingTop: 0,
-    }}
-  >
-    {/* Attach */}
-    <button
-      onClick={onAttach}
-      style={{
-        height: 42,
-        padding: "0 15px",
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 8,
-        borderRadius: 11,
-        border: "1px solid #E5E7EB",
-        background: "#FFFFFF",
-        color: "#374151",
-        fontSize: 13,
-        fontWeight: 600,
-        cursor: "pointer",
-        boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
-        transition: "all 0.15s ease",
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.background = "#F9FAFB";
-        e.currentTarget.style.borderColor = "#D1D5DB";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.background = "#FFFFFF";
-        e.currentTarget.style.borderColor = "#E5E7EB";
-      }}
-    >
-      <i
-        className="ti ti-link"
-        style={{
-          fontSize: 16,
-          color: "#6B7280",
-        }}
-        aria-hidden="true"
-      />
-      Attach
-    </button>
-
-    {/* Publish */}
-    <button
-      onClick={onPublish}
-      disabled={isPublishing || procedure.fields.length === 0}
-      style={{
-        height: 42,
-        padding: "0 18px",
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: "center",
-        gap: 8,
-        border: "none",
-        borderRadius: 11,
-        background:
-          isPublishing || procedure.fields.length === 0
-            ? "#D1D5DB"
-            : "#8B5CF6",
-        color: "#FFFFFF",
-        fontSize: 13,
-        fontWeight: 700,
-        cursor:
-          isPublishing || procedure.fields.length === 0
-            ? "not-allowed"
-            : "pointer",
-        boxShadow:
-          isPublishing || procedure.fields.length === 0
-            ? "none"
-            : "0 4px 12px rgba(139, 92, 246, 0.22)",
-        transition: "all 0.15s ease",
-      }}
-    >
-      <i
-        className={
-          isPublishing
-            ? "ti ti-loader-2"
-            : "ti ti-rocket"
-        }
-        style={{
-          fontSize: 15,
-          ...(isPublishing
-            ? { animation: "spin 1s linear infinite" }
-            : {}),
-        }}
-        aria-hidden="true"
-      />
-
-      {isPublishing ? "Publishing..." : "Publish"}
-    </button>
-
-<HeaderMenu
-  onEdit={() => setEditing((v) => !v)}
-  onDuplicate={onDuplicate}
-  isDuplicating={isDuplicating}
-  onDelete={onDelete}
-  isDeleting={isDeleting}
-/>
-  </div>
-</div>
+            <HeaderMenu
+              onEdit={() => setEditing((v) => !v)}
+              onDuplicate={onDuplicate}
+              isDuplicating={isDuplicating}
+              onDelete={onDelete}
+              isDeleting={isDeleting}
+            />
+          </div>
+        </div>
 
         {/* Tags / teams */}
         {(procedure.tags.length > 0 || procedure.teams.length > 0) && (
@@ -264,21 +152,12 @@ export function ProcedureDetailPanel({
           </div>
         )}
 
-        {/* Stat cards */}
-        <div style={{ display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 12, marginBottom: 24 }}>
-          <StatCard icon="ti-list-details" label="Fields" value={`${answerableCount}`} />
-          <StatCard
-            icon="ti-target-arrow"
-            label="Scoring"
-            value={procedure.scoringEnabled ? `Goal ${procedure.goalScore}` : "Off"}
-          />
-          <StatCard
-            icon="ti-star"
-            label="Max score"
-            value={procedure.scoringEnabled ? `${maxPossibleScore} pts (${scorableCount} fields)` : "—"}
-          />
-          <StatCard icon="ti-calendar-plus" label="Created" value={timeAgo(procedure.createdAt)} />
-        </div>
+    <div className="pd-stats-grid" style={{ display: "grid", gap: 12, marginBottom: 24 }}>
+  <StatCard icon="ti-list-details" label="Fields" value={`${answerableCount}`} />
+  <StatCard icon="ti-target-arrow" label="Scoring" value={procedure.scoringEnabled ? `Goal ${procedure.goalScore}` : "Off"} />
+  <StatCard icon="ti-star" label="Max score" value={procedure.scoringEnabled ? `${maxPossibleScore} pts (${scorableCount} fields)` : "—"} />
+  <StatCard icon="ti-calendar-plus" label="Created" value={timeAgo(procedure.createdAt)} />
+</div>
 
         {editing && (
           <EditDetailsForm
@@ -520,16 +399,16 @@ function EditDetailsForm({
           />
         </div>
 
-        <div style={{ display: "flex", gap: 12 }}>
-          <div style={{ flex: 1 }}>
-            <label style={labelStyle}>Tags</label>
-            <input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="safety, hvac" style={inputStyle} />
-          </div>
-          <div style={{ flex: 1 }}>
-            <label style={labelStyle}>Teams in charge</label>
-            <input value={teams} onChange={(e) => setTeams(e.target.value)} placeholder="Facilities" style={inputStyle} />
-          </div>
-        </div>
+      <div className="pd-edit-row" style={{ display: "flex", gap: 12 }}>
+  <div style={{ flex: 1 }}>
+    <label style={labelStyle}>Tags</label>
+    <input value={tags} onChange={(e) => setTags(e.target.value)} placeholder="safety, hvac" style={inputStyle} />
+  </div>
+  <div style={{ flex: 1 }}>
+    <label style={labelStyle}>Teams in charge</label>
+    <input value={teams} onChange={(e) => setTeams(e.target.value)} placeholder="Facilities" style={inputStyle} />
+  </div>
+</div>
 
         <div style={{ background: "#FFFBEB", border: "1px solid #FDE68A", borderRadius: 10, padding: 12 }}>
           <label style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 700, color: "#92400E", cursor: "pointer" }}>

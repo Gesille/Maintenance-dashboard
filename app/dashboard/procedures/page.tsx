@@ -379,13 +379,14 @@ export default function ProcedureLibraryPage() {
 
       {selectedProcedure && (
         <>
-          <AttachProcedureModal
-            open={attachOpen}
-            onClose={() => setAttachOpen(false)}
-            procedureTitle={selectedProcedure.title}
-            onAttach={handleBulkAttach}
-            isSubmitting={attaching}
-          />
+       <AttachProcedureModal
+  open={attachOpen}
+  onClose={() => setAttachOpen(false)}
+  procedureTitle={selectedProcedure.title}
+  procedureStatus={selectedProcedure.status}
+  onAttach={handleBulkAttach}
+  isSubmitting={attaching}
+/>
 
           <FieldEditorModal
             open={fieldEditorOpen}
