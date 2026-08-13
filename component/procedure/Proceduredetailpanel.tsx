@@ -51,110 +51,62 @@ export function ProcedureDetailPanel({
   const [editing, setEditing] = useState(false);
 
   return (
-   <div style={{ flex: 1, overflowY: "auto", background: "#F1F5F9" }}>
-      <div style={{ maxWidth: 1120, margin: "0 auto",padding: "32px 40px 72px"}}>
+    <div style={{ flex: 1, overflowY: "auto", background: "#F8FAFF" }}>
+      <div style={{ maxWidth: 880, margin: "0 auto", padding: "28px 32px 60px" }}>
         {/* Header */}
-       
-<div
-  style={{
-    background: "linear-gradient(135deg, #111827 0%, #312E81 58%, #4F46E5 100%)",
-    borderRadius: 22,
-    padding: "24px 26px",
-    marginBottom: 18,
-    color: "#fff",
-    boxShadow: "0 18px 45px rgba(49,46,129,.22)",
-  }}
->
-  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 20 }}>
-    <div style={{ display: "flex", gap: 16, minWidth: 0 }}>
-      <div
-        style={{
-          width: 56,
-          height: 56,
-          borderRadius: 16,
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: "rgba(255,255,255,.14)",
-          border: "1px solid rgba(255,255,255,.2)",
-          flexShrink: 0,
-        }}
-      >
-        <i className="ti ti-clipboard-check" style={{ fontSize: 27, color: "#C4B5FD" }} />
-      </div>
-      <div style={{ minWidth: 0 }}>
-        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginBottom: 8 }}>
-          <span
-            style={{
-              padding: "4px 10px",
-              borderRadius: 999,
-              background: "rgba(255,255,255,.15)",
-              border: "1px solid rgba(255,255,255,.25)",
-              fontSize: 11,
-              fontWeight: 800,
-            }}
-          >
-            {statusStyle.label}
-          </span>
-          <span style={{ color: "#C7D2FE", fontSize: 11 }}>
-            Updated {timeAgo(procedure.updatedAt)} · {procedure.createdByName}
-          </span>
+        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 20 }}>
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
+              <span
+                style={{
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 5,
+                  padding: "3px 10px",
+                  borderRadius: 999,
+                  fontSize: 11.5,
+                  fontWeight: 700,
+                  background: statusStyle.bg,
+                  color: statusStyle.fg,
+                  border: `1px solid ${statusStyle.border}`,
+                }}
+              >
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: statusStyle.dot }} />
+                {statusStyle.label}
+              </span>
+              <span style={{ fontSize: 12, color: "#9CA3AF" }}>
+                Updated {timeAgo(procedure.updatedAt)} · by {procedure.createdByName}
+              </span>
+            </div>
+            <h1 style={{ fontSize: 22, fontWeight: 800, color: "#111827", margin: 0, letterSpacing: "-0.02em" }}>
+              {procedure.title}
+            </h1>
+            {procedure.description && (
+              <p style={{ fontSize: 13.5, color: "#6B7280", lineHeight: 1.6, margin: "6px 0 0", maxWidth: 620 }}>
+                {procedure.description}
+              </p>
+            )}
+          </div>
+
+          <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
+            <button onClick={onAttach} style={primaryActionStyle}>
+              <i className="ti ti-link" style={{ fontSize: 14 }} aria-hidden="true" />
+              Attach
+            </button>
+            <HeaderMenu
+              status={procedure.status}
+              onEdit={() => setEditing((v) => !v)}
+              onPublish={onPublish}
+              isPublishing={isPublishing}
+              onDuplicate={onDuplicate}
+              isDuplicating={isDuplicating}
+              onDelete={onDelete}
+              isDeleting={isDeleting}
+              canPublish={procedure.fields.length > 0}
+            />
+          </div>
         </div>
-        <h1 style={{ margin: 0, color: "#fff", fontSize: 28, lineHeight: 1.1, fontWeight: 850, letterSpacing: "-0.04em" }}>
-          {procedure.title}
-        </h1>
-        {procedure.description && (
-          <p style={{ color: "#DDD6FE", margin: "8px 0 0", lineHeight: 1.55, fontSize: 13 }}>
-            {procedure.description}
-          </p>
-        )}
-      </div>
-    </div>
 
-    <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-      <button
-        onClick={onAttach}
-        style={{
-          border: "1px solid rgba(255,255,255,.24)",
-          background: "rgba(255,255,255,.12)",
-          color: "#fff",
-          borderRadius: 10,
-          padding: "10px 14px",
-          fontSize: 12,
-          fontWeight: 800,
-          cursor: "pointer",
-        }}
-      >
-        <i className="ti ti-link" style={{ marginRight: 6 }} />
-        Attach
-      </button>
-      <HeaderMenu
-        status={procedure.status}
-        onEdit={() => setEditing((v) => !v)}
-        onPublish={onPublish}
-        isPublishing={isPublishing}
-        onDuplicate={onDuplicate}
-        isDuplicating={isDuplicating}
-        onDelete={onDelete}
-        isDeleting={isDeleting}
-        canPublish={procedure.fields.some((field) => field.type !== "section_header")}
-      />
-    </div>
-  </div>
-
-  <div style={{ display: "flex", gap: 8, flexWrap: "wrap", marginTop: 18 }}>
-    {procedure.teams.map((team) => (
-      <span key={team} style={{ background: "rgba(255,255,255,.14)", color: "#E0E7FF", borderRadius: 999, padding: "5px 10px", fontSize: 11, fontWeight: 700 }}>
-        <i className="ti ti-users" style={{ marginRight: 5 }} />{team}
-      </span>
-    ))}
-    {procedure.tags.map((tag) => (
-      <span key={tag} style={{ background: "rgba(255,255,255,.08)", color: "#C7D2FE", borderRadius: 999, padding: "5px 10px", fontSize: 11, fontWeight: 700 }}>
-        #{tag}
-      </span>
-    ))}
-  </div>
-</div>
         {/* Tags / teams */}
         {(procedure.tags.length > 0 || procedure.teams.length > 0) && (
           <div style={{ display: "flex", flexWrap: "wrap", gap: 6, marginBottom: 20 }}>
