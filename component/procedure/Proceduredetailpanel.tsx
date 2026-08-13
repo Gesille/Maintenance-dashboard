@@ -54,58 +54,203 @@ export function ProcedureDetailPanel({
     <div style={{ flex: 1, overflowY: "auto", background: "#F8FAFF" }}>
       <div style={{ maxWidth: 880, margin: "0 auto", padding: "28px 32px 60px" }}>
         {/* Header */}
-        <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 16, marginBottom: 20 }}>
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 10 }}>
-              <span
-                style={{
-                  display: "inline-flex",
-                  alignItems: "center",
-                  gap: 5,
-                  padding: "3px 10px",
-                  borderRadius: 999,
-                  fontSize: 11.5,
-                  fontWeight: 700,
-                  background: statusStyle.bg,
-                  color: statusStyle.fg,
-                  border: `1px solid ${statusStyle.border}`,
-                }}
-              >
-                <span style={{ width: 6, height: 6, borderRadius: "50%", background: statusStyle.dot }} />
-                {statusStyle.label}
-              </span>
-              <span style={{ fontSize: 12, color: "#9CA3AF" }}>
-                Updated {timeAgo(procedure.updatedAt)} · by {procedure.createdByName}
-              </span>
-            </div>
-            <h1 style={{ fontSize: 22, fontWeight: 800, color: "#111827", margin: 0, letterSpacing: "-0.02em" }}>
-              {procedure.title}
-            </h1>
-            {procedure.description && (
-              <p style={{ fontSize: 13.5, color: "#6B7280", lineHeight: 1.6, margin: "6px 0 0", maxWidth: 620 }}>
-                {procedure.description}
-              </p>
-            )}
-          </div>
+        <div
+  style={{
+    display: "flex",
+    alignItems: "flex-start",
+    justifyContent: "space-between",
+    gap: 32,
+    marginBottom: 24,
+  }}
+>
+  {/* LEFT */}
+  <div style={{ minWidth: 0, flex: 1 }}>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 10,
+        marginBottom: 12,
+      }}
+    >
+      <span
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 6,
+          padding: "4px 10px",
+          borderRadius: 999,
+          fontSize: 11.5,
+          fontWeight: 700,
+          background: statusStyle.bg,
+          color: statusStyle.fg,
+          border: `1px solid ${statusStyle.border}`,
+          lineHeight: 1.2,
+        }}
+      >
+        <span
+          style={{
+            width: 6,
+            height: 6,
+            borderRadius: "50%",
+            background: statusStyle.dot,
+          }}
+        />
+        {statusStyle.label}
+      </span>
 
-          <div style={{ display: "flex", gap: 8, flexShrink: 0 }}>
-            <button onClick={onAttach} style={primaryActionStyle}>
-              <i className="ti ti-link" style={{ fontSize: 14 }} aria-hidden="true" />
-              Attach
-            </button>
-            <HeaderMenu
-              status={procedure.status}
-              onEdit={() => setEditing((v) => !v)}
-              onPublish={onPublish}
-              isPublishing={isPublishing}
-              onDuplicate={onDuplicate}
-              isDuplicating={isDuplicating}
-              onDelete={onDelete}
-              isDeleting={isDeleting}
-              canPublish={procedure.fields.length > 0}
-            />
-          </div>
-        </div>
+      <span
+        style={{
+          fontSize: 12,
+          color: "#9CA3AF",
+        }}
+      >
+        Updated {timeAgo(procedure.updatedAt)} · by{" "}
+        {procedure.createdByName}
+      </span>
+    </div>
+
+    <h1
+      style={{
+        fontSize: 25,
+        fontWeight: 800,
+        color: "#111827",
+        margin: 0,
+        letterSpacing: "-0.025em",
+        lineHeight: 1.25,
+      }}
+    >
+      {procedure.title}
+    </h1>
+
+    {procedure.description && (
+      <p
+        style={{
+          fontSize: 13.5,
+          color: "#6B7280",
+          lineHeight: 1.6,
+          margin: "7px 0 0",
+          maxWidth: 650,
+        }}
+      >
+        {procedure.description}
+      </p>
+    )}
+  </div>
+
+  {/* ACTIONS */}
+  <div
+    style={{
+      display: "flex",
+      alignItems: "center",
+      gap: 8,
+      flexShrink: 0,
+      paddingTop: 0,
+    }}
+  >
+    {/* Attach */}
+    <button
+      onClick={onAttach}
+      style={{
+        height: 42,
+        padding: "0 15px",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        borderRadius: 11,
+        border: "1px solid #E5E7EB",
+        background: "#FFFFFF",
+        color: "#374151",
+        fontSize: 13,
+        fontWeight: 600,
+        cursor: "pointer",
+        boxShadow: "0 1px 2px rgba(0,0,0,0.03)",
+        transition: "all 0.15s ease",
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.background = "#F9FAFB";
+        e.currentTarget.style.borderColor = "#D1D5DB";
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.background = "#FFFFFF";
+        e.currentTarget.style.borderColor = "#E5E7EB";
+      }}
+    >
+      <i
+        className="ti ti-link"
+        style={{
+          fontSize: 16,
+          color: "#6B7280",
+        }}
+        aria-hidden="true"
+      />
+      Attach
+    </button>
+
+    {/* Publish */}
+    <button
+      onClick={onPublish}
+      disabled={isPublishing || procedure.fields.length === 0}
+      style={{
+        height: 42,
+        padding: "0 18px",
+        display: "inline-flex",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 8,
+        border: "none",
+        borderRadius: 11,
+        background:
+          isPublishing || procedure.fields.length === 0
+            ? "#D1D5DB"
+            : "#8B5CF6",
+        color: "#FFFFFF",
+        fontSize: 13,
+        fontWeight: 700,
+        cursor:
+          isPublishing || procedure.fields.length === 0
+            ? "not-allowed"
+            : "pointer",
+        boxShadow:
+          isPublishing || procedure.fields.length === 0
+            ? "none"
+            : "0 4px 12px rgba(139, 92, 246, 0.22)",
+        transition: "all 0.15s ease",
+      }}
+    >
+      <i
+        className={
+          isPublishing
+            ? "ti ti-loader-2"
+            : "ti ti-rocket"
+        }
+        style={{
+          fontSize: 15,
+          ...(isPublishing
+            ? { animation: "spin 1s linear infinite" }
+            : {}),
+        }}
+        aria-hidden="true"
+      />
+
+      {isPublishing ? "Publishing..." : "Publish"}
+    </button>
+
+    {/* More */}
+    <HeaderMenu
+      status={procedure.status}
+      onEdit={() => setEditing((v) => !v)}
+      onPublish={onPublish}
+      isPublishing={isPublishing}
+      onDuplicate={onDuplicate}
+      isDuplicating={isDuplicating}
+      onDelete={onDelete}
+      isDeleting={isDeleting}
+      canPublish={procedure.fields.length > 0}
+    />
+  </div>
+</div>
 
         {/* Tags / teams */}
         {(procedure.tags.length > 0 || procedure.teams.length > 0) && (
