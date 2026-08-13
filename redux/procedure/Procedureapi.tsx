@@ -80,7 +80,9 @@ export interface ProcedureFieldResponse {
 }
 
 export interface ProcedureInstance {
+  instanceId: string;
   procedureId: number | null;
+
   title: string;
   fields: ProcedureField[];
   responses: ProcedureFieldResponse[];
@@ -149,10 +151,26 @@ interface InstanceResponse {
   data: ProcedureInstance | null;
 }
 
+interface InstancesResponse {
+  success: boolean;
+  data: ProcedureInstance[];
+}
+
+export interface ProcedureResponseInput {
+  fieldId: string;
+  value: string | number | boolean | string[] | null;
+}
+
 interface BulkAttachResponse {
   success: boolean;
   message: string;
-  data: { matched: number; modified: number };
+  data: { matched: number; modified: number; instances?: { requestId: number; instanceId: string }[] };
+}
+
+interface AttachResponse {
+  success: boolean;
+  message?: string;
+  data: { id: number; procedures?: ProcedureInstance[]; procedure?: ProcedureInstance | null };
 }
 
 // ── Slice ─────────────────────────────────────────────────────────────────────
@@ -299,14 +317,16 @@ export const procedureApi = apiSlice.injectEndpoints({
     }),
 
     // ── Attach to work order(s) ──
-    attachProcedureToRequest: builder.mutation<Procedure, { procedureId: number; requestId: number }>({
+        attachProcedureToRequest: builder.mutation<ProcedureInstance[], { procedureId: number; requestId: number }>({
+
       query: ({ procedureId, requestId }) => ({
         url: `attach/${procedureId}/request/${requestId}`,
         method: "POST",
         credentials: "include" as const,
       }),
-      transformResponse: (res: SingleResponse) => res.data,
+            transformResponse: (res: AttachResponse) => res.data.procedures ?? (res.data.procedure ? [res.data.procedure] : []),
       invalidatesTags: (_r, _e, { requestId }) => [
+
         { type: "ProcedureInstance", id: requestId },
         "MaintenanceRequests",
       ],
@@ -326,23 +346,36 @@ export const procedureApi = apiSlice.injectEndpoints({
       invalidatesTags: ["MaintenanceRequests"],
     }),
 
-    // ── Fill out / complete on a work order ──
-    getProcedureInstance: builder.query<ProcedureInstance | null, number>({
+        // ── Fill out / complete on a work order ──
+    getProcedureInstances: builder.query<ProcedureInstance[], number>({
       query: (requestId) => ({
-        url: `request/${requestId}/instance`,
+        url: `request/${requestId}/instances`,
+        method: "GET",
+        credentials: "include" as const,
+      }),
+      transformResponse: (res: InstancesResponse) => res.data,
+      providesTags: (_r, _e, requestId) => [{ type: "ProcedureInstance", id: requestId }],
+    }),
+
+    getProcedureInstance: builder.query<ProcedureInstance | null, { requestId: number; instanceId?: string }>({
+      query: ({ requestId, instanceId }) => ({
+        url: `request/${requestId}/instance${instanceId ? `/${instanceId}` : ""}`,
+
         method: "GET",
         credentials: "include" as const,
       }),
       transformResponse: (res: InstanceResponse) => res.data,
-      providesTags: (_r, _e, requestId) => [{ type: "ProcedureInstance", id: requestId }],
+            providesTags: (_r, _e, { requestId }) => [{ type: "ProcedureInstance", id: requestId }],
     }),
 
     submitProcedureResponses: builder.mutation<
       ProcedureInstance,
-      { requestId: number; responses: { fieldId: string; value: any }[] }
+            { requestId: number; instanceId?: string; responses: ProcedureResponseInput[] }
+
     >({
-      query: ({ requestId, responses }) => ({
-        url: `request/${requestId}/responses`,
+            query: ({ requestId, instanceId, responses }) => ({
+        url: `request/${requestId}${instanceId ? `/instance/${instanceId}` : ""}/responses`,
+
         method: "PATCH",
         body: { responses },
         credentials: "include" as const,
@@ -351,15 +384,17 @@ export const procedureApi = apiSlice.injectEndpoints({
       invalidatesTags: (_r, _e, { requestId }) => [{ type: "ProcedureInstance", id: requestId }],
     }),
 
-    completeProcedure: builder.mutation<ProcedureInstance, number>({
-      query: (requestId) => ({
-        url: `request/${requestId}/complete`,
+        completeProcedure: builder.mutation<ProcedureInstance, { requestId: number; instanceId?: string }>({
+      query: ({ requestId, instanceId }) => ({
+        url: `request/${requestId}${instanceId ? `/instance/${instanceId}` : ""}/complete`,
+
         method: "PATCH",
         credentials: "include" as const,
       }),
       transformResponse: (res: { success: boolean; data: ProcedureInstance }) => res.data,
-      invalidatesTags: (_r, _e, requestId) => [
+            invalidatesTags: (_r, _e, { requestId }) => [
         { type: "ProcedureInstance", id: requestId },
+
         "MaintenanceRequests",
       ],
     }),
@@ -370,7 +405,9 @@ export const procedureApi = apiSlice.injectEndpoints({
 
 export const {
   useGetAllProceduresQuery,
-  useGetProcedureByIdQuery,
+    useGetProcedureByIdQuery,
+  useGetProcedureInstancesQuery,
+
   useCreateProcedureMutation,
   useUpdateProcedureMutation,
   useDeleteProcedureMutation,

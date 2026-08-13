@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { apiSlice } from "../api/apiSlice";
+import type { ProcedureInstance } from "../procedure/Procedureapi";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -33,7 +34,9 @@ export interface MaintenanceRequest {
   maintenanceType: string;
   stage: StageInfo;
   media: { url: string; type: "image" | "video" }[];
-  checklist?: MaintenanceChecklist;
+    checklist?: MaintenanceChecklist;
+  procedures: ProcedureInstance[];
+
   equipment: {
     id: number;
     name: string;

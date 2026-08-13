@@ -1,4 +1,6 @@
 // WorkOrder — the frontend display model (mapped from MaintenanceRequest)
+import type { ProcedureInstance } from "@/redux/procedure/Procedureapi";
+
 
 export type WOStatus = "open" | "in_progress" | "on_hold" | "done";
 export type WOPriority = "low" | "medium" | "high";
@@ -63,5 +65,7 @@ export interface WorkOrder {
   assignees: Assignee[];
   checklist: ChecklistItem[];
   checklistResult?: "pass" | "flag" | "fail" | null;
-  signatureUrl?: string | null;
+    signatureUrl?: string | null;
+  procedures: ProcedureInstance[];
+
 }

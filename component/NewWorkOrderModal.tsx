@@ -3,6 +3,7 @@
 
 import { useState } from "react";
 import { X, Upload, Loader, Wrench } from "lucide-react";
+import type { Procedure } from "@/redux/procedure/Procedureapi";
 
 interface EquipmentOption {
   id: number;
@@ -22,8 +23,10 @@ interface NewWorkOrderModalProps {
   onClose: () => void;
   onSubmit: (formData: FormData) => Promise<void>;
   equipmentOptions: EquipmentOption[];
-  technicianOptions: TechnicianOption[];
+    technicianOptions: TechnicianOption[];
+  procedureOptions: Procedure[];
   isSubmitting: boolean;
+
 }
 
 const PRIORITY_OPTIONS = [
@@ -37,14 +40,18 @@ export function NewWorkOrderModal({
   onClose,
   onSubmit,
   equipmentOptions,
-  technicianOptions,
+    technicianOptions,
+  procedureOptions,
   isSubmitting,
+
 }: NewWorkOrderModalProps) {
   const [equipmentId, setEquipmentId] = useState("");
   const [priority, setPriority] = useState("medium");
   const [description, setDescription] = useState("");
   const [reportedBy, setReportedBy] = useState("");
-  const [selectedTechIds, setSelectedTechIds] = useState<string[]>([]);
+    const [selectedTechIds, setSelectedTechIds] = useState<string[]>([]);
+  const [selectedProcedureIds, setSelectedProcedureIds] = useState<number[]>([]);
+
   const [files, setFiles] = useState<File[]>([]);
   const [error, setError] = useState<string | null>(null);
 
@@ -55,13 +62,20 @@ export function NewWorkOrderModal({
       prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id],
     );
 
+  const toggleProcedure = (id: number) =>
+    setSelectedProcedureIds((prev) =>
+      prev.includes(id) ? prev.filter((procedureId) => procedureId !== id) : [...prev, id],
+    );
+
   const resetForm = () => {
     setEquipmentId("");
     setPriority("medium");
     setDescription("");
     setReportedBy("");
-    setSelectedTechIds([]);
+        setSelectedTechIds([]);
+    setSelectedProcedureIds([]);
     setFiles([]);
+
     setError(null);
   };
 
@@ -89,6 +103,7 @@ export function NewWorkOrderModal({
     formData.append("description", description.trim());
     if (reportedBy.trim()) formData.append("reportedBy", reportedBy.trim());
     formData.append("technicians", JSON.stringify(chosenTechs));
+    formData.append("procedureIds", JSON.stringify(selectedProcedureIds));
     files.forEach((f) => formData.append("files", f));
 
     try {
@@ -289,7 +304,28 @@ export function NewWorkOrderModal({
             )}
           </Field>
 
+                    {/* Procedures */}
+          <Field label="Add procedures (optional)">
+            {procedureOptions.length === 0 ? (
+              <p style={{ fontSize: 12, color: "#94A3B8", margin: 0 }}>No published procedures available.</p>
+            ) : (
+              <div style={{ border: "1.5px solid #E8EAFF", borderRadius: 10, padding: 12, maxHeight: 160, overflowY: "auto", display: "flex", flexDirection: "column", gap: 8 }}>
+                {procedureOptions.map((procedure) => (
+                  <label key={procedure.id} style={{ display: "flex", alignItems: "flex-start", gap: 8, fontSize: 13, cursor: "pointer" }}>
+                    <input type="checkbox" checked={selectedProcedureIds.includes(procedure.id)} onChange={() => toggleProcedure(procedure.id)} style={{ accentColor: "#6366F1", marginTop: 2 }} />
+                    <span>
+                      <span style={{ display: "block", fontWeight: 700, color: "#0F172A" }}>{procedure.title}</span>
+                      <span style={{ display: "block", fontSize: 11, color: "#94A3B8", marginTop: 2 }}>{procedure.fields.length} fields · {procedure.tags.join(", ") || "No tags"}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+            )}
+            {selectedProcedureIds.length > 0 && <p style={{ fontSize: 11, color: "#6366F1", margin: "6px 0 0", fontWeight: 600 }}>{selectedProcedureIds.length} procedure(s) will be attached.</p>}
+          </Field>
+
           {/* Media */}
+
           <Field label="Photos / Videos (optional)">
             <label
               style={{

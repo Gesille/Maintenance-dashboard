@@ -22,12 +22,15 @@ import {
   AVATAR_COLORS,
 } from "@/types/tokens";
 import { WorkOrder, WOStatus } from "@/types/types";
+
 import {
   useAssignTechniciansMutation,
+
   useGetMaintenanceMessagesQuery,
   useGetTechniciansQuery,
   usePostMaintenanceCommentMutation,
 } from "@/redux/Maintenance/Maintenanceapi";
+import { ProcedureExecutionPanel } from "./procedure/Procedureexecutionpanel";
 
 interface WODetailProps {
   wo: WorkOrder;
@@ -730,7 +733,11 @@ export function WODetailPanel({
     </div>
   </div>
 )}
+                        <ProcedureExecutionPanel requestId={wo.numericId} instances={wo.procedures} accentColor={accentColor} />
+
+            {/* Legacy checklist — retained for older work orders during migration */}
             {/* Checklist */}
+
             {wo.checklist.length > 0 && (
               <>
                 <SectionLabel

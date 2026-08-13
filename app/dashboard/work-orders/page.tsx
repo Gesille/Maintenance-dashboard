@@ -18,6 +18,7 @@ import { useUpdateMaintenanceStatusMutation } from "@/redux/Maintenance/Maintena
 import { NewWorkOrderModal } from "@/component/NewWorkOrderModal";
 import { useGetAllEquipmentQuery } from "@/redux/Equipment/Equipmentapi";
 import { WorkOrderCalendar } from "@/component/WorkOrderCalendar";
+import { useGetAllProceduresQuery } from "@/redux/procedure/Procedureapi";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -169,7 +170,9 @@ function toWorkOrder(r: MaintenanceRequest, index: number): WorkOrder {
     scheduleDateRaw: r.scheduleDate,
     checklist: r.checklist?.items ?? [],
     checklistResult: r.checklist?.result ?? null,
-    signatureUrl: r.checklist?.signatureUrl ?? null,
+        signatureUrl: r.checklist?.signatureUrl ?? null,
+    procedures: r.procedures ?? [],
+
   };
 }
 
@@ -186,7 +189,9 @@ export default function WorkOrdersPage() {
     Record<string, WOStatus>
   >({});
   const [updatingId, setUpdatingId] = useState<string | null>(null);
-  const { data: technicians = [] } = useGetTechniciansQuery();
+    const { data: technicians = [] } = useGetTechniciansQuery();
+  const { data: procedureOptions = [] } = useGetAllProceduresQuery({ status: "published" });
+
   const baseWorkOrders: WorkOrder[] = useMemo(
     () => (data?.data?.requests ?? []).map((r, i) => toWorkOrder(r, i)),
     [data],
@@ -443,8 +448,10 @@ export default function WorkOrdersPage() {
           onClose={() => setNewOrderOpen(false)}
           onSubmit={handleCreateWorkOrder}
           equipmentOptions={equipmentOptions}
-          technicianOptions={technicians}
+                    technicianOptions={technicians}
+          procedureOptions={procedureOptions}
           isSubmitting={creating}
+
         />
         {selectedWO && (
           <WODetailPanel
