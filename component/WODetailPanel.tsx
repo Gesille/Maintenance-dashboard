@@ -733,6 +733,7 @@ export function WODetailPanel({
     </div>
   </div>
 )}
+{/* Procedure Execution Panel */}
                         <ProcedureExecutionPanel requestId={wo.numericId} instances={wo.procedures} accentColor={accentColor} />
 
             {/* Legacy checklist — retained for older work orders during migration */}
