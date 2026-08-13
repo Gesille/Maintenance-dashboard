@@ -237,18 +237,13 @@ export function ProcedureDetailPanel({
       {isPublishing ? "Publishing..." : "Publish"}
     </button>
 
-    {/* More */}
-    <HeaderMenu
-      status={procedure.status}
-      onEdit={() => setEditing((v) => !v)}
-      onPublish={onPublish}
-      isPublishing={isPublishing}
-      onDuplicate={onDuplicate}
-      isDuplicating={isDuplicating}
-      onDelete={onDelete}
-      isDeleting={isDeleting}
-      canPublish={procedure.fields.length > 0}
-    />
+<HeaderMenu
+  onEdit={() => setEditing((v) => !v)}
+  onDuplicate={onDuplicate}
+  isDuplicating={isDuplicating}
+  onDelete={onDelete}
+  isDeleting={isDeleting}
+/>
   </div>
 </div>
 
@@ -353,50 +348,23 @@ export function ProcedureDetailPanel({
 // ── Header menu (publish / duplicate / delete) ────────────────────────────
 
 function HeaderMenu({
-  status,
   onEdit,
-  onPublish,
-  isPublishing,
   onDuplicate,
   isDuplicating,
   onDelete,
   isDeleting,
-  canPublish,
 }: {
-  status: Procedure["status"];
   onEdit: () => void;
-  onPublish: () => Promise<void>;
-  isPublishing: boolean;
   onDuplicate: () => Promise<void>;
   isDuplicating: boolean;
   onDelete: () => Promise<void>;
   isDeleting: boolean;
-  canPublish: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
   return (
     <div style={{ position: "relative" }}>
-      {status === "draft" && (
-        <button
-          onClick={onPublish}
-          disabled={isPublishing || !canPublish}
-          title={!canPublish ? "Add at least one field first" : undefined}
-          style={{
-            ...primaryActionStyle,
-            background: BRAND_GRADIENT,
-            color: "#fff",
-            border: "none",
-            boxShadow: "0 6px 16px rgba(99,102,241,0.3)",
-            opacity: isPublishing || !canPublish ? 0.6 : 1,
-            cursor: isPublishing || !canPublish ? "default" : "pointer",
-            marginRight: 8,
-          }}
-        >
-          <i className="ti ti-rocket" style={{ fontSize: 14 }} aria-hidden="true" />
-          {isPublishing ? "Publishing…" : "Publish"}
-        </button>
-      )}
+  
 
       <button onClick={() => setOpen((v) => !v)} style={iconButtonStyle} aria-label="More actions">
         <i className="ti ti-dots" style={{ fontSize: 16 }} aria-hidden="true" />
