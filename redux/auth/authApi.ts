@@ -41,8 +41,8 @@ export const authApi = apiSlice.injectEndpoints({
         url: "activation",
         method: "POST",
         body: {
-          activationToken,
-          activationCode,
+          activation_token: activationToken,
+          activation_code: activationCode,
         },
       }),
     }),
